@@ -4,7 +4,7 @@ import React from 'react';
 import { useSpeakerContainer } from '@/components/SpeakerContainer';
 import { useChatService } from '@/services/chatService';
 import SpeakerContainer from '@/components/SpeakerContainer';
-import ChatOverlay from '@/components/ChatOverlay';
+
 import ChatLog from '@/components/ChatLog';
 import { DEMO_MESSAGES, getRandomMessage, SPEAKER_CONFIGS } from './constants';
 
@@ -227,7 +227,7 @@ export default function DemoPage() {
           speakerId="player1"
           displayName="Alice"
           color="#007bff"
-          maxMessages={3}
+          maxMessages={5}
           defaultDuration={5000}
           chatContext="game"
           className="fixed top-5 right-5 z-50 p-4 bg-white rounded-lg shadow-lg border border-blue-200"
@@ -241,7 +241,7 @@ export default function DemoPage() {
               <div className="text-xs text-blue-600">Player</div>
             </div>
           </div>
-          <ChatOverlay maxMessages={3} />
+          
         </SpeakerContainer>
 
         <SpeakerContainer
@@ -262,7 +262,7 @@ export default function DemoPage() {
               <div className="text-xs text-green-600">NPC</div>
             </div>
           </div>
-          <ChatOverlay maxMessages={3} />
+          
         </SpeakerContainer>
 
         <SpeakerContainer
@@ -283,7 +283,7 @@ export default function DemoPage() {
               <div className="text-xs text-gray-600">System</div>
             </div>
           </div>
-          <ChatOverlay maxMessages={2} />
+          
         </SpeakerContainer>
 
         <SpeakerContainer
@@ -304,7 +304,7 @@ export default function DemoPage() {
               <div className="text-xs text-yellow-600">Trader</div>
             </div>
           </div>
-          <ChatOverlay maxMessages={3} />
+          
         </SpeakerContainer>
 
         {/* Block-Positioned Speaker Test Section */}
@@ -348,7 +348,7 @@ export default function DemoPage() {
                   <div className="text-xs text-red-600">Available for service</div>
                 </div>
               </div>
-              <ChatOverlay maxMessages={3} />
+          
             </SpeakerContainer>
           </div>
         </div>
@@ -396,7 +396,7 @@ export default function DemoPage() {
                     <div className="font-medium text-purple-800">Context Demo</div>
                     <div className="text-xs text-purple-600">No prop drilling!</div>
                   </div>
-                  <ChatOverlay maxMessages={2} />
+          
                 </SpeakerContainer>
               </div>
               <button
@@ -425,7 +425,7 @@ export default function DemoPage() {
                   <div className="text-xs text-green-600 pl-10">
                     Multiple UI components can share the same speaker context
                   </div>
-                  <ChatOverlay maxMessages={2} />
+          
                 </SpeakerContainer>
               </div>
               <button
