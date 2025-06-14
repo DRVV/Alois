@@ -4,107 +4,64 @@ import React from 'react';
 import { useSpeakerContainer } from '@/components/SpeakerContainer';
 import SpeakerContainer from '@/components/SpeakerContainer';
 import ChatLog from '@/components/ChatLog';
+import { DEMO_MESSAGES, getRandomMessage, SPEAKER_CONFIGS } from './constants';
 
 export default function DemoPage() {
   // Multiple speaker instances with different configurations
-  const playerChat = useSpeakerContainer('player1', {
-    displayName: 'Alice',
-    color: '#007bff',
-    defaultDuration: 5000,
-    chatContext: 'game'
+  const playerChat = useSpeakerContainer(SPEAKER_CONFIGS.player.id, {
+    displayName: SPEAKER_CONFIGS.player.displayName,
+    color: SPEAKER_CONFIGS.player.color,
+    defaultDuration: SPEAKER_CONFIGS.player.defaultDuration,
+    chatContext: SPEAKER_CONFIGS.player.chatContext,
   });
 
-  const npcChat = useSpeakerContainer('npc-guard', {
-    displayName: 'Town Guard',
-    color: '#28a745',
-    defaultDuration: 8000,
-    chatContext: 'dialogue'
+  const npcChat = useSpeakerContainer(SPEAKER_CONFIGS.npc.id, {
+    displayName: SPEAKER_CONFIGS.npc.displayName,
+    color: SPEAKER_CONFIGS.npc.color,
+    defaultDuration: SPEAKER_CONFIGS.npc.defaultDuration,
+    chatContext: SPEAKER_CONFIGS.npc.chatContext,
   });
 
-  const systemChat = useSpeakerContainer('system', {
-    displayName: 'System',
-    color: '#6c757d',
-    defaultDuration: 3000,
-    chatContext: 'notifications'
+  const systemChat = useSpeakerContainer(SPEAKER_CONFIGS.system.id, {
+    displayName: SPEAKER_CONFIGS.system.displayName,
+    color: SPEAKER_CONFIGS.system.color,
+    defaultDuration: SPEAKER_CONFIGS.system.defaultDuration,
+    chatContext: SPEAKER_CONFIGS.system.chatContext,
   });
 
-  const traderChat = useSpeakerContainer('npc-trader', {
-    displayName: 'Merchant',
-    color: '#ffc107',
-    defaultDuration: 6000,
-    chatContext: 'trade'
+  const traderChat = useSpeakerContainer(SPEAKER_CONFIGS.trader.id, {
+    displayName: SPEAKER_CONFIGS.trader.displayName,
+    color: SPEAKER_CONFIGS.trader.color,
+    defaultDuration: SPEAKER_CONFIGS.trader.defaultDuration,
+    chatContext: SPEAKER_CONFIGS.trader.chatContext,
   });
 
-  const innkeeperChat = useSpeakerContainer('npc-innkeeper', {
-    displayName: 'Innkeeper',
-    color: '#dc3545',
-    defaultDuration: 7000,
-    chatContext: 'dialogue'
+  const innkeeperChat = useSpeakerContainer(SPEAKER_CONFIGS.innkeeper.id, {
+    displayName: SPEAKER_CONFIGS.innkeeper.displayName,
+    color: SPEAKER_CONFIGS.innkeeper.color,
+    defaultDuration: SPEAKER_CONFIGS.innkeeper.defaultDuration,
+    chatContext: SPEAKER_CONFIGS.innkeeper.chatContext,
   });
 
+  // Simplified message handlers using constants
   const handlePlayerMessage = () => {
-    const messages = [
-      'Hello! I just entered the town.',
-      'Looking for some adventure!',
-      'Anyone seen any quests around here?',
-      'This place looks interesting.',
-      'Time to explore!',
-    ];
-    
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    playerChat.addMessage(randomMessage);
+    playerChat.addMessage(getRandomMessage(DEMO_MESSAGES.player));
   };
 
   const handleNPCMessage = () => {
-    const messages = [
-      'Halt! Who goes there?',
-      'Welcome to our town, traveler.',
-      'Keep the peace while you\'re here.',
-      'The mayor wants to see all visitors.',
-      'Be careful after dark.',
-    ];
-    
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    npcChat.addMessage(randomMessage);
+    npcChat.addMessage(getRandomMessage(DEMO_MESSAGES.npc));
   };
 
   const handleSystemMessage = () => {
-    const messages = [
-      'Quest completed!',
-      'Level up! You are now level 5.',
-      'New item acquired: Magic Sword',
-      'Achievement unlocked: First Steps',
-      'Connection restored.',
-    ];
-    
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    systemChat.addMessage(randomMessage);
+    systemChat.addMessage(getRandomMessage(DEMO_MESSAGES.system));
   };
 
   const handleTraderMessage = () => {
-    const messages = [
-      'Welcome to my shop!',
-      'I have the finest goods in town.',
-      'Special discount for new customers!',
-      'Come back anytime!',
-      'That\'s a rare item you have there.',
-    ];
-    
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    traderChat.addMessage(randomMessage);
+    traderChat.addMessage(getRandomMessage(DEMO_MESSAGES.trader));
   };
 
   const handleInnkeeperMessage = () => {
-    const messages = [
-      'Welcome to my inn!',
-      'Room for the night?',
-      'We serve the best ale in town.',
-      'Safe travels, friend.',
-      'The beds are clean and warm.',
-    ];
-    
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    innkeeperChat.addMessage(randomMessage);
+    innkeeperChat.addMessage(getRandomMessage(DEMO_MESSAGES.innkeeper));
   };
 
   const handleMultipleSpeakers = () => {

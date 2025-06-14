@@ -16,6 +16,16 @@ export interface SpeakerContainerProps {
   children?: React.ReactNode;
 }
 
+// Position mapping for CSS classes
+const POSITION_CLASS_MAP: Record<string, string> = {
+  'top-left': 'topleft',
+  'top-right': 'topright',
+  'bottom-left': 'bottomleft',
+  'bottom-right': 'bottomright',
+  'center-left': 'centerleft',
+  'center-right': 'centerright',
+};
+
 const SpeakerContainer: React.FC<SpeakerContainerProps> = ({
   speakerId,
   displayName,
@@ -34,7 +44,7 @@ const SpeakerContainer: React.FC<SpeakerContainerProps> = ({
     chatContext,
   });
 
-  const positionClass = position ? styles[position.replace('-', '')] : ''; // Convert 'top-left' to 'topleft'
+  const positionClass = POSITION_CLASS_MAP[position] ? styles[POSITION_CLASS_MAP[position]] : '';
   const isBlockPositioned = className.includes('block-positioned-speaker');
   const containerClass = isBlockPositioned ? styles.blockPositioned : `${styles.speakerContainer} ${positionClass}`;
 

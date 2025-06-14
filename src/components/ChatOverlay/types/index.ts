@@ -37,9 +37,3 @@ export interface ChatOverlayProps {
   maxMessages?: number;
   messageDuration?: number;
 }
-
-export interface AutoHideMessage {
-  id: string;
-  content: string;
-  timeoutId: NodeJS.Timeout;
-}

@@ -20,6 +20,17 @@ interface ChatStore {
   getMessagesBySpeaker: (speakerId: string) => ChatMessage[];
   getSpeakerStats: () => SpeakerStats[];
   
+  // Helper methods for addMessage
+  ensureSpeakerRegistered: (speaker: string, speakerDisplayName?: string, duration?: number) => void;
+  createMessage: (id: string, speaker: string, content: string, duration: number, chatContext?: string, speakerDisplayName?: string) => ChatMessage;
+  addMessageToStores: (message: ChatMessage) => void;
+  scheduleAnimationUpdate: (id: string) => void;
+  scheduleMessageRemoval: (id: string, duration: number) => void;
+  
+  // Cleanup methods
+  cleanup: () => void;
+  clearTimeoutsForMessage: (id: string) => void;
+  
   // Legacy method for backward compatibility
   addLegacyMessage: (content: string, duration?: number) => void;
 }
@@ -42,20 +53,57 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   activeSpeakers: new Set(),
 
   addMessage: (speaker: string, content: string, options: MessageOptions = {}) => {
-    const { duration = 5000, chatContext, speakerDisplayName } = options;
-    const id = generateSpeakerBasedId(speaker);
+    // Input validation
+    if (!speaker || typeof speaker !== 'string') {
+      console.warn('ChatStore: Invalid speaker ID provided');
+      return;
+    }
     
-    // Auto-register speaker if not exists
+    if (!content || typeof content !== 'string') {
+      console.warn('ChatStore: Invalid message content provided');
+      return;
+    }
+
+    const { duration = 5000, chatContext, speakerDisplayName } = options;
+    
+    // Validate duration
+    const validDuration = typeof duration === 'number' && duration >= 0 ? duration : 5000;
+    
+    try {
+      const id = generateSpeakerBasedId(speaker);
+      
+      // Ensure speaker is registered
+      get().ensureSpeakerRegistered(speaker, speakerDisplayName, validDuration);
+      
+      // Create and add the message
+      const newMessage = get().createMessage(id, speaker, content, validDuration, chatContext, speakerDisplayName);
+      get().addMessageToStores(newMessage);
+      
+      // Handle animations and timeouts
+      get().scheduleAnimationUpdate(id);
+      if (validDuration > 0) {
+        get().scheduleMessageRemoval(id, validDuration);
+      }
+    } catch (error) {
+      console.error('ChatStore: Error adding message:', error);
+    }
+  },
+
+  // Helper methods for addMessage
+  ensureSpeakerRegistered: (speaker: string, speakerDisplayName?: string, duration?: number) => {
     const { speakers } = get();
     if (!speakers.has(speaker)) {
       get().addSpeaker(speaker, {
         displayName: speakerDisplayName || speaker,
-        defaultDuration: duration,
+        defaultDuration: duration || 5000,
         isActive: true,
       });
     }
+  },
 
-    const newMessage: ChatMessage = {
+  createMessage: (id: string, speaker: string, content: string, duration: number, chatContext?: string, speakerDisplayName?: string): ChatMessage => {
+    const { speakers } = get();
+    return {
       id,
       content,
       timestamp: new Date(),
@@ -65,15 +113,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       chatContext,
       animationState: 'entering',
     };
+  },
 
-    // Add message to both overlay and log
+  addMessageToStores: (message: ChatMessage) => {
     set((state) => ({
-      overlayMessages: [...state.overlayMessages, newMessage],
-      logMessages: [...state.logMessages, newMessage],
-      activeSpeakers: new Set(state.activeSpeakers).add(speaker),
+      overlayMessages: [...state.overlayMessages, message],
+      logMessages: [...state.logMessages, message],
+      activeSpeakers: new Set(state.activeSpeakers).add(message.speaker),
     }));
+  },
 
-    // Set animation state to visible after a brief delay
+  scheduleAnimationUpdate: (id: string) => {
     setTimeout(() => {
       set((state) => ({
         overlayMessages: state.overlayMessages.map(msg => 
@@ -81,18 +131,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         ),
       }));
     }, 50);
+  },
 
-    // Set timeout for auto-removal from overlay only (only if duration > 0)
-    if (duration > 0) {
-      const timeoutId = setTimeout(() => {
-        get().startMessageExit(id);
-      }, duration);
+  scheduleMessageRemoval: (id: string, duration: number) => {
+    const timeoutId = setTimeout(() => {
+      get().startMessageExit(id);
+    }, duration);
 
-      // Store timeout reference
-      set((state) => ({
-        timeouts: new Map(state.timeouts).set(id, timeoutId),
-      }));
-    }
+    set((state) => ({
+      timeouts: new Map(state.timeouts).set(id, timeoutId),
+    }));
   },
 
   addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => {
@@ -194,6 +242,34 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       messageCount: data.count,
       lastMessageTime: data.lastMessage,
     }));
+  },
+
+  // Cleanup methods
+  clearTimeoutsForMessage: (id: string) => {
+    const { timeouts } = get();
+    const timeoutId = timeouts.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      const newTimeouts = new Map(timeouts);
+      newTimeouts.delete(id);
+      set({ timeouts: newTimeouts });
+    }
+  },
+
+  cleanup: () => {
+    const { timeouts } = get();
+    
+    // Clear all active timeouts
+    timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    
+    // Reset store to initial state
+    set({
+      overlayMessages: [],
+      logMessages: [],
+      timeouts: new Map(),
+      speakers: new Map(),
+      activeSpeakers: new Set(),
+    });
   },
 
   // Legacy method for backward compatibility
