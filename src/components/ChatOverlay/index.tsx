@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useChatStore } from '@/stores/chatStore';
+import { useChatService } from '@/services/chatService';
+import { useSpeakerService } from '@/services/speakerService';
 import { ChatOverlayProps, ChatMessage, MessageOptions } from './types';
 import styles from './ChatOverlay.module.css';
 
@@ -14,30 +15,27 @@ interface ExtendedChatOverlayProps extends ChatOverlayProps {
 const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
   className = '',
   maxMessages = 5,
-  speakerId,
   showSpeakerNames = true,
   filterBySpeaker,
 }) => {
-  const getVisibleOverlayMessages = useChatStore((state) => state.getVisibleOverlayMessages);
-  const getVisibleOverlayMessagesBySpeaker = useChatStore((state) => state.getVisibleOverlayMessagesBySpeaker);
-  const speakers = useChatStore((state) => state.speakers);
+  const chatService = useChatService();
   
-  // Get messages - use per-speaker method if filtering by speaker, otherwise use global method
-  let visibleMessages: any[];
-  if (filterBySpeaker) {
-    // Use per-speaker method to get messages with local constraint
-    visibleMessages = getVisibleOverlayMessagesBySpeaker(filterBySpeaker, maxMessages);
-  } else {
-    // Use global method for backward compatibility
-    visibleMessages = getVisibleOverlayMessages(maxMessages);
-  }
+  // Get messages - use filtered approach for better encapsulation
+  const visibleMessages = React.useMemo(() => {
+    if (filterBySpeaker) {
+      return chatService.getVisibleMessages(maxMessages, filterBySpeaker);
+    }
+    return chatService.getVisibleMessages(maxMessages);
+  }, [chatService, maxMessages, filterBySpeaker]);
+
+  const speakers = chatService.getSpeakers();
 
   if (visibleMessages.length === 0) {
     return null;
   }
 
   const getSpeakerColor = (speakerId: string) => {
-    const speaker = speakers.get(speakerId);
+    const speaker = speakers.find(s => s.id === speakerId);
     return speaker?.color || '#007bff';
   };
 
@@ -88,64 +86,48 @@ const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
 
 ChatOverlay.displayName = 'ChatOverlay';
 
-// Speaker-aware hook for controlling the overlay
+// Speaker-aware hook for controlling the overlay - now using service layer
 export const useChatOverlay = (speakerId: string, options: {
   defaultDuration?: number;
   displayName?: string;
   color?: string;
   chatContext?: string;
 } = {}) => {
-  const { defaultDuration = 5000, displayName, color, chatContext } = options;
-  
-  const addMessage = useChatStore((state) => state.addMessage);
-  const addSpeaker = useChatStore((state) => state.addSpeaker);
-  const clearMessages = useChatStore((state) => state.clearAllOverlayMessages);
-  const getMessagesBySpeaker = useChatStore((state) => state.getMessagesBySpeaker);
-  const messages = useChatStore((state) => state.overlayMessages);
-
-  // Auto-register speaker on first use
-  React.useEffect(() => {
-    addSpeaker(speakerId, {
-      displayName: displayName || speakerId,
-      defaultDuration,
-      isActive: true,
-      color,
-    });
-  }, [speakerId, displayName, defaultDuration, color, addSpeaker]);
+  const speakerService = useSpeakerService(speakerId, options);
+  const chatService = useChatService();
 
   const ChatOverlayComponent: React.FC<ExtendedChatOverlayProps> = (props) => (
     <ChatOverlay {...props} speakerId={speakerId} />
   );
 
   return {
-    messages,
-    speakerMessages: getMessagesBySpeaker(speakerId),
+    messages: chatService.getVisibleMessages(),
+    speakerMessages: speakerService.getMyMessages(),
     addMessage: (content: string, messageOptions?: Omit<MessageOptions, 'speakerDisplayName'>) => 
-      addMessage(speakerId, content, { 
-        duration: defaultDuration, 
-        chatContext,
-        speakerDisplayName: displayName,
-        ...messageOptions 
-      }),
-    clearMessages,
+      speakerService.say(content, messageOptions),
+    clearMessages: () => chatService.clearChat('overlay'),
     ChatOverlay: ChatOverlayComponent,
   };
 };
 
 // Legacy hook for backward compatibility
 export const useLegacyChatOverlay = (defaultDuration: number = 5000) => {
-  const addLegacyMessage = useChatStore((state) => state.addLegacyMessage);
-  const clearMessages = useChatStore((state) => state.clearAllOverlayMessages);
-  const messages = useChatStore((state) => state.overlayMessages);
+  const chatService = useChatService();
 
   const ChatOverlayComponent: React.FC<ChatOverlayProps> = (props) => (
     <ChatOverlay {...props} showSpeakerNames={false} />
   );
 
   return {
-    messages,
-    addMessage: (content: string, duration?: number) => addLegacyMessage(content, duration || defaultDuration),
-    clearMessages,
+    messages: chatService.getVisibleMessages(),
+    addMessage: (content: string, duration?: number) => {
+      console.warn('useLegacyChatOverlay is deprecated. Use useChatOverlay instead.');
+      chatService.sendMessage('unknown', content, { 
+        duration: duration || defaultDuration, 
+        speakerDisplayName: 'Unknown' 
+      });
+    },
+    clearMessages: () => chatService.clearChat('overlay'),
     ChatOverlay: ChatOverlayComponent,
   };
 };

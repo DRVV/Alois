@@ -1,86 +1,109 @@
 import { create } from 'zustand';
 import { ChatMessage, SpeakerConfig, MessageOptions, SpeakerStats } from '@/components/ChatOverlay/types';
 
-interface ChatStore {
+// Public API Interface - Only these methods should be used by components
+interface ChatStorePublicAPI {
+  // Core operations
+  addMessage: (speaker: string, content: string, options?: MessageOptions) => void;
+  addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => void;
+  
+  // Query operations
+  getVisibleMessages: (maxMessages?: number, speakerId?: string) => ChatMessage[];
+  getAllMessages: (speakerId?: string) => ChatMessage[];
+  getSpeakerInfo: (speakerId?: string) => SpeakerConfig | SpeakerConfig[] | undefined;
+  getSpeakerStats: () => SpeakerStats[];
+  
+  // Management operations
+  removeMessage: (messageId: string) => void;
+  clearMessages: (type?: 'overlay' | 'log' | 'all') => void;
+  cleanup: () => void;
+  
+  // Legacy support (deprecated)
+  addLegacyMessage: (content: string, duration?: number) => void;
+}
+
+// Internal state interface - not exposed
+interface ChatStoreState {
   overlayMessages: ChatMessage[];
   logMessages: ChatMessage[];
   timeouts: Map<string, NodeJS.Timeout>;
   speakers: Map<string, SpeakerConfig>;
   activeSpeakers: Set<string>;
-  
-  // Enhanced methods
-  addMessage: (speaker: string, content: string, options?: MessageOptions) => void;
-  addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => void;
-  removeOverlayMessage: (id: string) => void;
-  startMessageExit: (id: string) => void;
-  clearAllOverlayMessages: () => void;
-  clearAllLogMessages: () => void;
-  getVisibleOverlayMessages: (maxMessages: number) => ChatMessage[];
-  getVisibleOverlayMessagesBySpeaker: (speakerId: string, maxMessages: number) => ChatMessage[];
-  getMessagesBySpeaker: (speakerId: string) => ChatMessage[];
-  getSpeakerStats: () => SpeakerStats[];
-  
-  // Helper methods for addMessage
+}
+
+// Internal methods interface - not exposed
+interface ChatStoreInternalAPI {
   ensureSpeakerRegistered: (speaker: string, speakerDisplayName?: string, duration?: number) => void;
   createMessage: (id: string, speaker: string, content: string, duration: number, chatContext?: string, speakerDisplayName?: string) => ChatMessage;
   addMessageToStores: (message: ChatMessage) => void;
   scheduleAnimationUpdate: (id: string) => void;
   scheduleMessageRemoval: (id: string, duration: number) => void;
-  
-  // Cleanup methods
-  cleanup: () => void;
+  startMessageExit: (id: string) => void;
   clearTimeoutsForMessage: (id: string) => void;
-  
-  // Legacy method for backward compatibility
-  addLegacyMessage: (content: string, duration?: number) => void;
+  validateInput: (speaker: string, content: string) => { isValid: boolean; error?: string };
+  generateMessageId: (speaker: string) => string;
 }
 
-const generateSpeakerBasedId = (speaker: string) => {
+// Combined internal interface
+type ChatStoreInternal = ChatStoreState & ChatStoreInternalAPI & ChatStorePublicAPI;
+
+// Input validation helper
+const validateMessageInput = (speaker: string, content: string): { isValid: boolean; error?: string } => {
+  if (!speaker || typeof speaker !== 'string' || speaker.trim().length === 0) {
+    return { isValid: false, error: 'Speaker ID must be a non-empty string' };
+  }
+  
+  if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    return { isValid: false, error: 'Message content must be a non-empty string' };
+  }
+  
+  if (speaker.length > 50) {
+    return { isValid: false, error: 'Speaker ID must be 50 characters or less' };
+  }
+  
+  if (content.length > 1000) {
+    return { isValid: false, error: 'Message content must be 1000 characters or less' };
+  }
+  
+  return { isValid: true };
+};
+
+// ID generation helper
+const generateSpeakerBasedId = (speaker: string): string => {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substr(2, 9);
   return `${speaker}-${timestamp}-${random}`;
 };
 
-const generateLegacyId = () => {
-  return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
-export const useChatStore = create<ChatStore>((set, get) => ({
+// Create the store with proper encapsulation
+export const useChatStore = create<ChatStoreInternal>((set, get) => ({
+  // State
   overlayMessages: [],
   logMessages: [],
   timeouts: new Map(),
   speakers: new Map(),
   activeSpeakers: new Set(),
 
+  // PUBLIC API METHODS
+  
   addMessage: (speaker: string, content: string, options: MessageOptions = {}) => {
-    // Input validation
-    if (!speaker || typeof speaker !== 'string') {
-      console.warn('ChatStore: Invalid speaker ID provided');
-      return;
-    }
-    
-    if (!content || typeof content !== 'string') {
-      console.warn('ChatStore: Invalid message content provided');
+    const validation = get().validateInput(speaker, content);
+    if (!validation.isValid) {
+      console.error('ChatStore: Invalid input -', validation.error);
       return;
     }
 
     const { duration = 5000, chatContext, speakerDisplayName } = options;
-    
-    // Validate duration
     const validDuration = typeof duration === 'number' && duration >= 0 ? duration : 5000;
     
     try {
-      const id = generateSpeakerBasedId(speaker);
+      const id = get().generateMessageId(speaker);
       
-      // Ensure speaker is registered
       get().ensureSpeakerRegistered(speaker, speakerDisplayName, validDuration);
-      
-      // Create and add the message
       const newMessage = get().createMessage(id, speaker, content, validDuration, chatContext, speakerDisplayName);
       get().addMessageToStores(newMessage);
-      
-      // Handle animations and timeouts
       get().scheduleAnimationUpdate(id);
+      
       if (validDuration > 0) {
         get().scheduleMessageRemoval(id, validDuration);
       }
@@ -89,7 +112,154 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }
   },
 
-  // Helper methods for addMessage
+  addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => {
+    if (!speakerId || typeof speakerId !== 'string') {
+      console.error('ChatStore: Invalid speaker ID provided');
+      return;
+    }
+
+    const { speakers } = get();
+    
+    // Only add if speaker doesn't already exist to prevent infinite loops
+    if (speakers.has(speakerId)) {
+      return;
+    }
+
+    set((state) => ({
+      speakers: new Map(state.speakers).set(speakerId, {
+        id: speakerId,
+        ...config,
+      }),
+    }));
+  },
+
+  getVisibleMessages: (maxMessages: number = 5, speakerId?: string) => {
+    const { overlayMessages } = get();
+    
+    if (speakerId) {
+      const speakerMessages = overlayMessages.filter(msg => msg.speaker === speakerId);
+      return speakerMessages.slice(-maxMessages);
+    }
+    
+    return overlayMessages.slice(-maxMessages);
+  },
+
+  getAllMessages: (speakerId?: string) => {
+    const { logMessages } = get();
+    
+    if (speakerId) {
+      return logMessages.filter(msg => msg.speaker === speakerId);
+    }
+    
+    return [...logMessages];
+  },
+
+  getSpeakerInfo: (speakerId?: string) => {
+    const { speakers } = get();
+    
+    if (speakerId) {
+      const speaker = speakers.get(speakerId);
+      if (!speaker) {
+        console.warn(`ChatStore: Speaker '${speakerId}' not found`);
+        return undefined;
+      }
+      return { ...speaker };
+    }
+    
+    return Array.from(speakers.values()).map(speaker => ({ ...speaker }));
+  },
+
+  getSpeakerStats: () => {
+    const { logMessages, speakers } = get();
+    const stats = new Map<string, { count: number; lastMessage?: Date }>();
+    
+    logMessages.forEach(msg => {
+      const current = stats.get(msg.speaker) || { count: 0 };
+      stats.set(msg.speaker, {
+        count: current.count + 1,
+        lastMessage: !current.lastMessage || msg.timestamp > current.lastMessage 
+          ? msg.timestamp 
+          : current.lastMessage,
+      });
+    });
+
+    return Array.from(stats.entries()).map(([speakerId, data]) => ({
+      speakerId,
+      displayName: speakers.get(speakerId)?.displayName || speakerId,
+      messageCount: data.count,
+      lastMessageTime: data.lastMessage,
+    }));
+  },
+
+  removeMessage: (messageId: string) => {
+    if (!messageId || typeof messageId !== 'string') {
+      console.error('ChatStore: Invalid message ID provided');
+      return;
+    }
+
+    get().clearTimeoutsForMessage(messageId);
+    
+    set((state) => ({
+      overlayMessages: state.overlayMessages.filter(msg => msg.id !== messageId),
+    }));
+  },
+
+  clearMessages: (type: 'overlay' | 'log' | 'all' = 'all') => {
+    const { timeouts } = get();
+    
+    switch (type) {
+      case 'overlay':
+        timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        set({
+          overlayMessages: [],
+          timeouts: new Map(),
+        });
+        break;
+        
+      case 'log':
+        set({
+          logMessages: [],
+        });
+        break;
+        
+      case 'all':
+      default:
+        timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        set({
+          overlayMessages: [],
+          logMessages: [],
+          timeouts: new Map(),
+        });
+        break;
+    }
+  },
+
+  cleanup: () => {
+    const { timeouts } = get();
+    
+    timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    
+    set({
+      overlayMessages: [],
+      logMessages: [],
+      timeouts: new Map(),
+      speakers: new Map(),
+      activeSpeakers: new Set(),
+    });
+  },
+
+  // Legacy support (deprecated)
+  addLegacyMessage: (content: string, duration: number = 5000) => {
+    console.warn('ChatStore: addLegacyMessage is deprecated. Use addMessage instead.');
+    get().addMessage('unknown', content, { duration, speakerDisplayName: 'Unknown' });
+  },
+
+  // PRIVATE INTERNAL METHODS
+  
+  validateInput: validateMessageInput,
+  
+  generateMessageId: (speaker: string) => generateSpeakerBasedId(speaker),
+
   ensureSpeakerRegistered: (speaker: string, speakerDisplayName?: string, duration?: number) => {
     const { speakers } = get();
     if (!speakers.has(speaker)) {
@@ -143,108 +313,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }));
   },
 
-  addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => {
-    set((state) => ({
-      speakers: new Map(state.speakers).set(speakerId, {
-        id: speakerId,
-        ...config,
-      }),
-    }));
-  },
-
   startMessageExit: (id: string) => {
-    // Set message to exiting state
     set((state) => ({
       overlayMessages: state.overlayMessages.map(msg => 
         msg.id === id ? { ...msg, animationState: 'exiting', isExiting: true } : msg
       ),
     }));
 
-    // Remove message after exit animation completes
     setTimeout(() => {
-      get().removeOverlayMessage(id);
-    }, 300); // Animation duration
+      get().removeMessage(id);
+    }, 300);
   },
 
-  removeOverlayMessage: (id: string) => {
-    const { timeouts } = get();
-    
-    // Clear timeout if exists
-    const timeoutId = timeouts.get(id);
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      const newTimeouts = new Map(timeouts);
-      newTimeouts.delete(id);
-      
-      set((state) => ({
-        timeouts: newTimeouts,
-        overlayMessages: state.overlayMessages.filter(msg => msg.id !== id),
-      }));
-    } else {
-      // Just remove message from overlay if no timeout
-      set((state) => ({
-        overlayMessages: state.overlayMessages.filter(msg => msg.id !== id),
-      }));
-    }
-  },
-
-  clearAllOverlayMessages: () => {
-    const { timeouts } = get();
-    
-    // Clear all timeouts
-    timeouts.forEach(timeoutId => clearTimeout(timeoutId));
-    
-    set({
-      overlayMessages: [],
-      timeouts: new Map(),
-    });
-  },
-
-  clearAllLogMessages: () => {
-    set({
-      logMessages: [],
-    });
-  },
-
-  getVisibleOverlayMessages: (maxMessages: number) => {
-    const { overlayMessages } = get();
-    return overlayMessages.slice(-maxMessages);
-  },
-
-  getVisibleOverlayMessagesBySpeaker: (speakerId: string, maxMessages: number) => {
-    const { overlayMessages } = get();
-    const speakerMessages = overlayMessages.filter(msg => msg.speaker === speakerId);
-    return speakerMessages.slice(-maxMessages);
-  },
-
-  getMessagesBySpeaker: (speakerId: string) => {
-    const { logMessages } = get();
-    return logMessages.filter(msg => msg.speaker === speakerId);
-  },
-
-  getSpeakerStats: () => {
-    const { logMessages, speakers } = get();
-    const stats = new Map<string, { count: number; lastMessage?: Date }>();
-    
-    logMessages.forEach(msg => {
-      const current = stats.get(msg.speaker) || { count: 0 };
-      stats.set(msg.speaker, {
-        count: current.count + 1,
-        lastMessage: !current.lastMessage || msg.timestamp > current.lastMessage 
-          ? msg.timestamp 
-          : current.lastMessage,
-      });
-    });
-
-    return Array.from(stats.entries()).map(([speakerId, data]) => ({
-      speakerId,
-      displayName: speakers.get(speakerId)?.displayName || speakerId,
-      messageCount: data.count,
-      lastMessageTime: data.lastMessage,
-    }));
-  },
-
-  // Cleanup methods
   clearTimeoutsForMessage: (id: string) => {
     const { timeouts } = get();
     const timeoutId = timeouts.get(id);
@@ -255,25 +335,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       set({ timeouts: newTimeouts });
     }
   },
-
-  cleanup: () => {
-    const { timeouts } = get();
-    
-    // Clear all active timeouts
-    timeouts.forEach(timeoutId => clearTimeout(timeoutId));
-    
-    // Reset store to initial state
-    set({
-      overlayMessages: [],
-      logMessages: [],
-      timeouts: new Map(),
-      speakers: new Map(),
-      activeSpeakers: new Set(),
-    });
-  },
-
-  // Legacy method for backward compatibility
-  addLegacyMessage: (content: string, duration: number = 5000) => {
-    get().addMessage('unknown', content, { duration, speakerDisplayName: 'Unknown' });
-  },
 }));
+
+// Export only the public API type for external use
+export type ChatStore = ChatStorePublicAPI;
+
+// Export a typed selector hook for better type safety
+export const useChatStoreSelector = <T>(selector: (state: ChatStorePublicAPI) => T): T => {
+  return useChatStore(selector as unknown as (state: ChatStoreInternal) => T);
+};

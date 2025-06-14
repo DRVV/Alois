@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useChatStore } from '@/stores/chatStore';
+import { useChatService } from '@/services/chatService';
 import { ChatLogProps } from './types';
 import styles from './ChatLog.module.css';
 
@@ -20,40 +20,33 @@ const ChatLog: React.FC<ExtendedChatLogProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpeaker, setSelectedSpeaker] = useState<string>(filterBySpeaker || '');
-  const messages = useChatStore((state) => state.logMessages);
-  const speakers = useChatStore((state) => state.speakers);
-  const getSpeakerStats = useChatStore((state) => state.getSpeakerStats);
-  const clearAllMessages = useChatStore((state) => state.clearAllLogMessages);
+  
+  const chatService = useChatService();
+  
+  // Get data using service layer
+  const messages = chatService.getMessages();
+  const speakers = chatService.getSpeakers();
 
-  // Get unique speakers from messages
+  // Get unique speakers from messages for the dropdown
   const availableSpeakers = useMemo(() => {
     const speakerSet = new Set(messages.map(msg => msg.speaker));
-    return Array.from(speakerSet).map(speakerId => ({
-      id: speakerId,
-      displayName: speakers.get(speakerId)?.displayName || speakerId,
-      color: speakers.get(speakerId)?.color || '#007bff',
-    }));
+    return Array.from(speakerSet).map(speakerId => {
+      const speakerConfig = speakers.find(s => s.id === speakerId);
+      return {
+        id: speakerId,
+        displayName: speakerConfig?.displayName || speakerId,
+        color: speakerConfig?.color || '#007bff',
+      };
+    });
   }, [messages, speakers]);
 
-  // Filter messages based on search term and selected speaker
+  // Filter messages using service layer
   const filteredMessages = useMemo(() => {
-    let filtered = messages;
-    
-    // Filter by speaker if selected
-    if (selectedSpeaker) {
-      filtered = filtered.filter(msg => msg.speaker === selectedSpeaker);
-    }
-    
-    // Filter by search term
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(message =>
-        message.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (message.speakerDisplayName || message.speaker).toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    return filtered;
-  }, [messages, searchTerm, selectedSpeaker]);
+    return chatService.getMessages({
+      speakerId: selectedSpeaker || undefined,
+      searchTerm: searchTerm.trim() || undefined,
+    });
+  }, [chatService, selectedSpeaker, searchTerm]);
 
   // Highlight search terms in message content
   const highlightSearchTerm = (content: string, term: string) => {
@@ -88,28 +81,12 @@ const ChatLog: React.FC<ExtendedChatLogProps> = ({
   };
 
   const handleExport = () => {
-    const exportData = messages.map(msg => ({
-      timestamp: msg.timestamp.toISOString(),
-      content: msg.content,
-      duration: msg.duration,
-    }));
-
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `chat-log-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    chatService.exportChat();
   };
 
   const handleClearAll = () => {
     if (window.confirm('Are you sure you want to clear all chat messages? This action cannot be undone.')) {
-      clearAllMessages();
+      chatService.clearChat('log');
       setSearchTerm('');
     }
   };

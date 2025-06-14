@@ -68,6 +68,25 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Avatar size variants */
+.avatarSmall {
+  width: 32px;
+  height: 32px;
+  font-size: 0.75rem;
+}
+
+.avatarMedium {
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+}
+
+.avatarLarge {
+  width: 48px;
+  height: 48px;
+  font-size: 1.25rem;
+}
+
 .speakerName {
   font-weight: 600;
   color: #374151;

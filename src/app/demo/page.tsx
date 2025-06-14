@@ -2,11 +2,22 @@
 
 import React from 'react';
 import { useSpeakerContainer } from '@/components/SpeakerContainer';
+import { useChatService } from '@/services/chatService';
 import SpeakerContainer from '@/components/SpeakerContainer';
+import { 
+  PositionedSpeaker, 
+  SpeakerInfo, 
+  SpeakerAvatar, 
+  SpeakerName, 
+  FixedPositionWrapper 
+} from '@/components/SpeakerContainer/helpers';
 import ChatLog from '@/components/ChatLog';
 import { DEMO_MESSAGES, getRandomMessage, SPEAKER_CONFIGS } from './constants';
 
 export default function DemoPage() {
+  // Chat service for global operations
+  const chatService = useChatService();
+  
   // Multiple speaker instances with different configurations
   const playerChat = useSpeakerContainer(SPEAKER_CONFIGS.player.id, {
     displayName: SPEAKER_CONFIGS.player.displayName,
@@ -43,48 +54,48 @@ export default function DemoPage() {
     chatContext: SPEAKER_CONFIGS.innkeeper.chatContext,
   });
 
-  // Simplified message handlers using constants
+  // Simplified message handlers using constants - updated for new service API
   const handlePlayerMessage = () => {
-    playerChat.addMessage(getRandomMessage(DEMO_MESSAGES.player));
+    playerChat.say(getRandomMessage(DEMO_MESSAGES.player));
   };
 
   const handleNPCMessage = () => {
-    npcChat.addMessage(getRandomMessage(DEMO_MESSAGES.npc));
+    npcChat.say(getRandomMessage(DEMO_MESSAGES.npc));
   };
 
   const handleSystemMessage = () => {
-    systemChat.addMessage(getRandomMessage(DEMO_MESSAGES.system));
+    systemChat.say(getRandomMessage(DEMO_MESSAGES.system));
   };
 
   const handleTraderMessage = () => {
-    traderChat.addMessage(getRandomMessage(DEMO_MESSAGES.trader));
+    traderChat.say(getRandomMessage(DEMO_MESSAGES.trader));
   };
 
   const handleInnkeeperMessage = () => {
-    innkeeperChat.addMessage(getRandomMessage(DEMO_MESSAGES.innkeeper));
+    innkeeperChat.say(getRandomMessage(DEMO_MESSAGES.innkeeper));
   };
 
   const handleMultipleSpeakers = () => {
-    playerChat.addMessage('Hey, anyone around?');
-    setTimeout(() => npcChat.addMessage('I\'m here, what do you need?'), 1000);
-    setTimeout(() => traderChat.addMessage('Looking to buy something?'), 2000);
-    setTimeout(() => systemChat.addMessage('Multiple conversations detected.'), 3000);
+    playerChat.say('Hey, anyone around?');
+    setTimeout(() => npcChat.say('I&apos;m here, what do you need?'), 1000);
+    setTimeout(() => traderChat.say('Looking to buy something?'), 2000);
+    setTimeout(() => systemChat.say('Multiple conversations detected.'), 3000);
   };
 
   const handleLongMessage = () => {
-    playerChat.addMessage('This is a longer message to test how the chat overlay handles text wrapping and longer content. It should wrap nicely within the bubble and show the speaker name clearly.');
+    playerChat.say('This is a longer message to test how the chat overlay handles text wrapping and longer content. It should wrap nicely within the bubble and show the speaker name clearly.');
   };
 
   const handleCustomDuration = () => {
-    systemChat.addMessage('This important message will stay visible for 15 seconds!', { duration: 15000 });
+    systemChat.say('This important message will stay visible for 15 seconds!', { duration: 15000 });
   };
 
   const handlePermanentMessage = () => {
-    systemChat.addMessage('This is a permanent message that will stay in the log forever!', { duration: 0 });
+    systemChat.say('This is a permanent message that will stay in the log forever!', { duration: 0 });
   };
 
   const handleClearMessages = () => {
-    playerChat.clearMessages();
+    chatService.clearChat('overlay');
   };
 
   return (
@@ -209,7 +220,7 @@ export default function DemoPage() {
         </div>
 
         {/* Individual Speaker Containers positioned around the screen */}
-        <SpeakerContainer
+        <PositionedSpeaker
           speakerId="player1"
           displayName="Alice"
           color="#007bff"
@@ -218,10 +229,11 @@ export default function DemoPage() {
           defaultDuration={5000}
           chatContext="game"
         >
+          <SpeakerInfo displayName="Alice" color="#007bff" />
           <div className="text-xs text-blue-600 font-medium">Player</div>
-        </SpeakerContainer>
+        </PositionedSpeaker>
 
-        <SpeakerContainer
+        <PositionedSpeaker
           speakerId="npc-guard"
           displayName="Town Guard"
           color="#28a745"
@@ -230,10 +242,11 @@ export default function DemoPage() {
           defaultDuration={8000}
           chatContext="dialogue"
         >
+          <SpeakerInfo displayName="Town Guard" color="#28a745" />
           <div className="text-xs text-green-600 font-medium">NPC</div>
-        </SpeakerContainer>
+        </PositionedSpeaker>
 
-        <SpeakerContainer
+        <PositionedSpeaker
           speakerId="system"
           displayName="System"
           color="#6c757d"
@@ -242,10 +255,11 @@ export default function DemoPage() {
           defaultDuration={3000}
           chatContext="notifications"
         >
+          <SpeakerInfo displayName="System" color="#6c757d" />
           <div className="text-xs text-gray-600 font-medium">System</div>
-        </SpeakerContainer>
+        </PositionedSpeaker>
 
-        <SpeakerContainer
+        <PositionedSpeaker
           speakerId="npc-trader"
           displayName="Merchant"
           color="#ffc107"
@@ -254,8 +268,9 @@ export default function DemoPage() {
           defaultDuration={6000}
           chatContext="trade"
         >
+          <SpeakerInfo displayName="Merchant" color="#ffc107" />
           <div className="text-xs text-yellow-600 font-medium">Trader</div>
-        </SpeakerContainer>
+        </PositionedSpeaker>
 
         {/* Block-Positioned Speaker Test Section */}
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
@@ -280,17 +295,24 @@ export default function DemoPage() {
             </div>
           </div>
 
-          {/* Block-positioned Innkeeper Container */}
+          {/* Block-positioned Innkeeper Container - completely custom styling */}
           <div className="relative">
             <SpeakerContainer
               speakerId="npc-innkeeper"
-              displayName="Innkeeper"
-              color="#dc3545"
               maxMessages={3}
               defaultDuration={7000}
               chatContext="dialogue"
-              className="block-positioned-speaker"
-            />
+              className="w-full max-w-md mx-auto p-4 bg-red-50 border border-red-200 rounded-lg"
+            >
+              {/* Custom speaker UI - user has complete control */}
+              <div className="flex items-center gap-3 mb-2">
+                <SpeakerAvatar displayName="Innkeeper" color="#dc3545" size="large" />
+                <div>
+                  <SpeakerName>🏠 The Innkeeper</SpeakerName>
+                  <div className="text-xs text-red-600">Available for service</div>
+                </div>
+              </div>
+            </SpeakerContainer>
           </div>
           
           <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
@@ -321,78 +343,99 @@ export default function DemoPage() {
 
         <div className="mt-8 bg-gray-50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-3">
-            New SpeakerContainer Usage Example
+            New Flexible SpeakerContainer Usage Examples
           </h3>
-          <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
-{`import { useSpeakerContainer } from '@/components/SpeakerContainer';
-import SpeakerContainer from '@/components/SpeakerContainer';
-import ChatLog from '@/components/ChatLog';
-
-function MyComponent() {
-  // Create speaker-aware chat instances
-  const playerChat = useSpeakerContainer('player1', {
-    displayName: 'Alice',
-    color: '#007bff',
-    defaultDuration: 5000,
-    chatContext: 'game'
-  });
-
-  const npcChat = useSpeakerContainer('npc-guard', {
-    displayName: 'Town Guard', 
-    color: '#28a745',
-    defaultDuration: 8000,
-    chatContext: 'dialogue'
-  });
-  
-  const handlePlayerMessage = () => {
-    playerChat.addMessage('Hello World!');
-  };
-
-  const handleNPCMessage = () => {
-    npcChat.addMessage('Welcome, traveler!');
-  };
-  
-  return (
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-md font-medium text-gray-600 mb-2">1. Completely Custom UI (Maximum Flexibility)</h4>
+              <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
+{`// User has COMPLETE control over styling and positioning
+<SpeakerContainer speakerId="player1" maxMessages={3}>
+  <div className="my-custom-design flex items-center gap-4 p-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+    <img src="/player-avatar.png" className="w-16 h-16 rounded-full" />
     <div>
-      {/* Each speaker gets their own positioned container */}
-      <SpeakerContainer
-        speakerId="player1"
-        displayName="Alice"
-        color="#007bff"
-        position="top-right"
-        maxMessages={3}
-      >
-        <div className="text-xs text-blue-600">Player</div>
-      </SpeakerContainer>
-
-      <SpeakerContainer
-        speakerId="npc-guard"
-        displayName="Town Guard"
-        color="#28a745"
-        position="top-left"
-        maxMessages={3}
-      >
-        <div className="text-xs text-green-600">NPC</div>
-      </SpeakerContainer>
-
-      <button onClick={handlePlayerMessage}>
-        Player Message
-      </button>
-      <button onClick={handleNPCMessage}>
-        NPC Message
-      </button>
-      
-      {/* Full message history with speaker filtering */}
-      <ChatLog 
-        maxHeight="400px"
-        showTimestamps={true}
-        showSearch={true}
-        showSpeakers={true}
-      />
+      <h3 className="text-white font-bold text-xl">Alice the Warrior</h3>
+      <div className="text-blue-200">Level 42 • Online</div>
+      <div className="flex gap-2 mt-2">
+        <span className="px-2 py-1 bg-yellow-400 text-black text-xs rounded">VIP</span>
+        <span className="px-2 py-1 bg-green-400 text-black text-xs rounded">Guild Leader</span>
+      </div>
     </div>
-  );
-}`}
-          </pre>
+  </div>
+</SpeakerContainer>`}
+              </pre>
+            </div>
+
+            <div>
+              <h4 className="text-md font-medium text-gray-600 mb-2">2. Using Helper Components (Quick Setup)</h4>
+              <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
+{`import { PositionedSpeaker, SpeakerInfo } from '@/components/SpeakerContainer/helpers';
+
+// Quick positioned speaker with built-in UI
+<PositionedSpeaker
+  speakerId="player1"
+  position="top-right"
+  maxMessages={3}
+>
+  <SpeakerInfo displayName="Alice" color="#007bff" />
+</PositionedSpeaker>
+
+// Or mix custom content with helper components
+<PositionedSpeaker speakerId="npc1" position="top-left">
+  <SpeakerAvatar displayName="Guard" color="#28a745" size="large" />
+  <div className="ml-3">
+    <SpeakerName>Town Guard</SpeakerName>
+    <div className="text-xs text-green-600">Ready to help</div>
+  </div>
+</PositionedSpeaker>`}
+              </pre>
+            </div>
+
+            <div>
+              <h4 className="text-md font-medium text-gray-600 mb-2">3. Inline/Grid Layout (No Fixed Positioning)</h4>
+              <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
+{`// Use in any layout - grid, flexbox, inline, etc.
+<div className="grid grid-cols-2 gap-4">
+  <SpeakerContainer speakerId="player1" className="p-4 bg-blue-50 rounded-lg">
+    <PlayerCard name="Alice" level={42} />
+  </SpeakerContainer>
+  
+  <SpeakerContainer speakerId="npc1" className="p-4 bg-green-50 rounded-lg">
+    <NPCCard name="Guard" faction="Town Watch" />
+  </SpeakerContainer>
+</div>
+
+// Or in a sidebar
+<aside className="w-64 bg-white shadow-lg">
+  <SpeakerContainer speakerId="system" className="p-3 border-b">
+    <SystemNotifications />
+  </SpeakerContainer>
+</aside>`}
+              </pre>
+            </div>
+
+            <div>
+              <h4 className="text-md font-medium text-gray-600 mb-2">4. Headless Usage (Logic Only)</h4>
+              <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
+{`// Just chat functionality, no UI at all
+<SpeakerContainer 
+  speakerId="background-system" 
+  showChatOverlay={false}
+  className="hidden"
+/>
+
+// Or completely invisible but still functional
+<SpeakerContainer speakerId="analytics" style={{ display: 'none' }} />`}
+              </pre>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-green-800 text-sm">
+              <strong>🎉 Key Benefits:</strong> The new SpeakerContainer is completely unopinionated about UI and positioning. 
+              Users can integrate it into any design system, use any CSS framework, and create any layout they need!
+            </p>
+          </div>
         </div>
       </div>
     </div>

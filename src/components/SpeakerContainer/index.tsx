@@ -1,97 +1,92 @@
 'use client';
 
 import React from 'react';
-import { useChatOverlay } from '@/components/ChatOverlay';
-import styles from './SpeakerContainer.module.css';
+import { useSpeakerService } from '@/services/speakerService';
+import ChatOverlay from '@/components/ChatOverlay';
+import { MessageOptions } from '@/components/ChatOverlay/types';
 
 export interface SpeakerContainerProps {
   speakerId: string;
-  displayName: string;
-  color?: string;
-  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center-left' | 'center-right';
-  defaultDuration?: number;
-  chatContext?: string;
   maxMessages?: number;
+  chatContext?: string;
   className?: string;
+  style?: React.CSSProperties;
   children?: React.ReactNode;
+  
+  // Optional chat overlay customization
+  showChatOverlay?: boolean;
+  chatOverlayClassName?: string;
+  
+  // Optional speaker service configuration
+  displayName?: string;
+  color?: string;
+  defaultDuration?: number;
 }
 
-// Position mapping for CSS classes
-const POSITION_CLASS_MAP: Record<string, string> = {
-  'top-left': 'topleft',
-  'top-right': 'topright',
-  'bottom-left': 'bottomleft',
-  'bottom-right': 'bottomright',
-  'center-left': 'centerleft',
-  'center-right': 'centerright',
-};
-
+/**
+ * Minimal, unopinionated SpeakerContainer component.
+ * Only handles speaker registration and chat overlay - no layout or styling opinions.
+ * Users have complete control over positioning, styling, and content.
+ */
 const SpeakerContainer: React.FC<SpeakerContainerProps> = ({
   speakerId,
-  displayName,
-  color = '#007bff',
-  position = 'top-right',
-  defaultDuration = 5000,
-  chatContext,
   maxMessages = 3,
+  chatContext,
   className = '',
+  style,
   children,
+  showChatOverlay = true,
+  chatOverlayClassName = '',
+  displayName,
+  color,
+  defaultDuration,
 }) => {
-  const speakerChat = useChatOverlay(speakerId, {
-    displayName,
-    color,
-    defaultDuration,
+  // Register the speaker with optional configuration
+  useSpeakerService(speakerId, {
+    displayName: displayName || speakerId,
+    color: color || '#007bff',
+    defaultDuration: defaultDuration || 5000,
     chatContext,
   });
 
-  const positionClass = POSITION_CLASS_MAP[position] ? styles[POSITION_CLASS_MAP[position]] : '';
-  const isBlockPositioned = className.includes('block-positioned-speaker');
-  const containerClass = isBlockPositioned ? styles.blockPositioned : `${styles.speakerContainer} ${positionClass}`;
-
   return (
-    <div className={`${containerClass} ${className}`}>
-      {children && (
-        <div className={styles.speakerInfo}>
-          <div 
-            className={styles.speakerAvatar}
-            style={{ backgroundColor: color }}
-          >
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-          <div className={styles.speakerName}>
-            {displayName}
-          </div>
-        </div>
-      )}
-      
-      {/* Speaker-specific overlay that only shows this speaker's messages */}
-      <speakerChat.ChatOverlay 
-        maxMessages={maxMessages}
-        filterBySpeaker={speakerId}
-        className={styles.speakerOverlay}
-      />
-      
+    <div className={className} style={style}>
       {children}
+      
+      {showChatOverlay && (
+        <ChatOverlay 
+          maxMessages={maxMessages}
+          filterBySpeaker={speakerId}
+          className={chatOverlayClassName}
+        />
+      )}
     </div>
   );
 };
 
 export default SpeakerContainer;
 
-// Hook to get speaker chat controls
+// Hook to get speaker container controls - now using service layer
 export const useSpeakerContainer = (speakerId: string, options: {
   displayName: string;
   color?: string;
   defaultDuration?: number;
   chatContext?: string;
 } = { displayName: speakerId }) => {
-  const speakerChat = useChatOverlay(speakerId, options);
+  const speakerService = useSpeakerService(speakerId, options);
   
   return {
-    ...speakerChat,
-    // Add convenience method for adding messages
-    say: (message: string, duration?: number) => {
-      speakerChat.addMessage(message, duration ? { duration } : undefined);
+    // Speaker service API
+    ...speakerService,
+    
+    // Add convenience method for adding messages (alias for say)
+    say: (message: string, messageOptions?: Omit<MessageOptions, 'speakerDisplayName'>) => {
+      speakerService.say(message, messageOptions);
+    },
+    
+    // Additional convenience methods
+    sendMessage: (message: string, duration?: number) => {
+      speakerService.say(message, duration ? { duration } : undefined);
     },
   };
 };
