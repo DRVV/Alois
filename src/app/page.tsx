@@ -61,7 +61,7 @@ export default function Home() {
           </h2>
           <p className="text-gray-600 mb-4 text-sm">
             This demo uses the new SpeakerProvider + ChatOverlay pattern.
-            Notice how ChatOverlay doesn't need any speaker-specific props!
+            Notice how ChatOverlay doesn&apos;t need any speaker-specific props!
           </p>
           
           <SpeakerProvider 

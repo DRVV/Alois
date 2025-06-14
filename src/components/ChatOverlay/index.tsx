@@ -7,36 +7,25 @@ import { useOptionalSpeakerContext } from '@/hooks/useOptionalSpeakerContext';
 import { ChatOverlayProps, ChatMessage, MessageOptions } from './types';
 import styles from './ChatOverlay.module.css';
 
-interface ExtendedChatOverlayProps extends ChatOverlayProps {
-  speakerId?: string;
-  showSpeakerNames?: boolean;
-  filterBySpeaker?: string;
-}
-
 /**
- * Context-aware ChatOverlay that automatically uses speaker context when available.
- * Falls back to prop-based configuration for backward compatibility.
+ * Modern context-based ChatOverlay that requires speaker context.
+ * No backward compatibility - use within SpeakerProvider only.
  */
-const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
+const ChatOverlay: React.FC<ChatOverlayProps> = React.memo(({
   className = '',
   maxMessages = 5,
-  showSpeakerNames = true,
-  filterBySpeaker,
 }) => {
-  // Use safe context hook that returns null if not available
+  // Always use context - no fallback needed
   const speakerContext = useOptionalSpeakerContext();
-
-  // Use context speaker ID if available, otherwise use filterBySpeaker prop
-  const effectiveFilterBySpeaker = speakerContext?.speakerId || filterBySpeaker;
   const chatService = useChatService();
   
-  // Get messages - use filtered approach for better encapsulation
+  // Get messages filtered by speaker context
   const visibleMessages = React.useMemo(() => {
-    if (effectiveFilterBySpeaker) {
-      return chatService.getVisibleMessages(maxMessages, effectiveFilterBySpeaker);
+    if (speakerContext?.speakerId) {
+      return chatService.getVisibleMessages(maxMessages, speakerContext.speakerId);
     }
     return chatService.getVisibleMessages(maxMessages);
-  }, [chatService, maxMessages, effectiveFilterBySpeaker]);
+  }, [chatService, maxMessages, speakerContext?.speakerId]);
 
   const speakers = chatService.getSpeakers();
 
@@ -76,14 +65,12 @@ const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
               background: getSpeakerColor(message.speaker),
             } as React.CSSProperties}
           >
-            {showSpeakerNames && (
-              <div 
-                className={styles.speakerName}
-                style={{ color: 'rgba(255, 255, 255, 0.9)' }}
-              >
-                {message.speakerDisplayName || message.speaker}
-              </div>
-            )}
+            <div 
+              className={styles.speakerName}
+              style={{ color: 'rgba(255, 255, 255, 0.9)' }}
+            >
+              {message.speakerDisplayName || message.speaker}
+            </div>
             <div className={styles.messageContent}>
               {message.content}
             </div>
@@ -106,8 +93,8 @@ export const useChatOverlay = (speakerId: string, options: {
   const speakerService = useSpeakerService(speakerId, options);
   const chatService = useChatService();
 
-  const ChatOverlayComponent: React.FC<ExtendedChatOverlayProps> = (props) => (
-    <ChatOverlay {...props} speakerId={speakerId} />
+  const ChatOverlayComponent: React.FC<ChatOverlayProps> = (props) => (
+    <ChatOverlay {...props} />
   );
 
   return {
@@ -120,27 +107,5 @@ export const useChatOverlay = (speakerId: string, options: {
   };
 };
 
-// Legacy hook for backward compatibility
-export const useLegacyChatOverlay = (defaultDuration: number = 5000) => {
-  const chatService = useChatService();
-
-  const ChatOverlayComponent: React.FC<ChatOverlayProps> = (props) => (
-    <ChatOverlay {...props} showSpeakerNames={false} />
-  );
-
-  return {
-    messages: chatService.getVisibleMessages(),
-    addMessage: (content: string, duration?: number) => {
-      console.warn('useLegacyChatOverlay is deprecated. Use useChatOverlay instead.');
-      chatService.sendMessage('unknown', content, { 
-        duration: duration || defaultDuration, 
-        speakerDisplayName: 'Unknown' 
-      });
-    },
-    clearMessages: () => chatService.clearChat('overlay'),
-    ChatOverlay: ChatOverlayComponent,
-  };
-};
-
 export default ChatOverlay;
-export type { ChatOverlayProps, ChatMessage, ExtendedChatOverlayProps };
+export type { ChatOverlayProps, ChatMessage };

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { SpeakerProvider, SpeakerProviderProps } from './SpeakerContext';
+import { SpeakerProvider } from './SpeakerContext';
 import ChatOverlay from '@/components/ChatOverlay';
 import { MessageOptions } from '@/components/ChatOverlay/types';
 import { useSpeakerService } from '@/services/speakerService';

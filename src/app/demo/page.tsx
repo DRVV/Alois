@@ -4,13 +4,7 @@ import React from 'react';
 import { useSpeakerContainer } from '@/components/SpeakerContainer';
 import { useChatService } from '@/services/chatService';
 import SpeakerContainer from '@/components/SpeakerContainer';
-import { 
-  PositionedSpeaker, 
-  SpeakerInfo, 
-  SpeakerAvatar, 
-  SpeakerName, 
-  FixedPositionWrapper 
-} from '@/components/SpeakerContainer/helpers';
+import ChatOverlay from '@/components/ChatOverlay';
 import ChatLog from '@/components/ChatLog';
 import { DEMO_MESSAGES, getRandomMessage, SPEAKER_CONFIGS } from './constants';
 
@@ -65,7 +59,7 @@ export default function DemoPage() {
     color: '#10b981'
   });
 
-  // Simplified message handlers using constants - updated for new service API
+  // Message handlers
   const handlePlayerMessage = () => {
     playerChat.say(getRandomMessage(DEMO_MESSAGES.player));
   };
@@ -121,7 +115,7 @@ export default function DemoPage() {
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">
-          Speaker-Aware Chat System Demo
+          Modern Speaker-Aware Chat System Demo
         </h1>
         
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
@@ -208,87 +202,110 @@ export default function DemoPage() {
 
         <div className="bg-white rounded-lg shadow-lg p-6 relative min-h-96">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            Context-Based Speaker Architecture Demo
+            Modern Context-Based Architecture
           </h2>
           <p className="text-gray-600 mb-4">
-            Now using the new context-based architecture! Each speaker creates a context that eliminates prop drilling.
-            ChatOverlay components automatically get their speaker context without manual prop passing.
+            Clean, modern architecture with zero prop drilling. Each speaker creates a context that 
+            ChatOverlay components automatically consume.
           </p>
           
           <div className="text-sm text-gray-500 space-y-2">
-            <p><strong>New Context-Based Features:</strong></p>
+            <p><strong>Modern Features:</strong></p>
             <ul className="list-disc list-inside space-y-1">
               <li>🎯 <strong>Zero prop drilling</strong> - ChatOverlay gets speaker context automatically</li>
-              <li>🏗️ <strong>Better composition</strong> - SpeakerProvider + ChatOverlay work together seamlessly</li>
-              <li>🔧 <strong>Cleaner architecture</strong> - Clear separation between context and UI</li>
-              <li>📦 <strong>Backward compatible</strong> - Existing SpeakerContainer still works</li>
-              <li>🎨 <strong>Flexible usage</strong> - Use SpeakerProvider directly or via SpeakerContainer</li>
+              <li>🏗️ <strong>Clean composition</strong> - SpeakerContainer + ChatOverlay work seamlessly</li>
+              <li>🔧 <strong>Simple architecture</strong> - Clear separation between context and UI</li>
               <li>⚡ <strong>Better performance</strong> - Context prevents unnecessary re-renders</li>
               <li>🧪 <strong>Easier testing</strong> - Components can be tested in isolation</li>
               <li>🔍 <strong>Implicit filtering</strong> - ChatOverlay automatically filters by context speaker</li>
             </ul>
           </div>
-          
-          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <p className="text-green-800 text-sm">
-              <strong>Architecture Improvement:</strong> The new context-based approach eliminates the prop drilling 
-              issue while maintaining clean component boundaries. ChatOverlay no longer needs speaker props!
-            </p>
-          </div>
         </div>
 
-        {/* Individual Speaker Containers positioned around the screen */}
-        <PositionedSpeaker
+        {/* Modern positioned speakers using CSS classes directly */}
+        <SpeakerContainer
           speakerId="player1"
           displayName="Alice"
           color="#007bff"
-          position="top-right"
           maxMessages={3}
           defaultDuration={5000}
           chatContext="game"
+          className="fixed top-5 right-5 z-50 p-4 bg-white rounded-lg shadow-lg border border-blue-200"
         >
-          <SpeakerInfo displayName="Alice" color="#007bff" />
-          <div className="text-xs text-blue-600 font-medium">Player</div>
-        </PositionedSpeaker>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+              A
+            </div>
+            <div>
+              <div className="font-medium text-blue-800">Alice</div>
+              <div className="text-xs text-blue-600">Player</div>
+            </div>
+          </div>
+          <ChatOverlay maxMessages={3} />
+        </SpeakerContainer>
 
-        <PositionedSpeaker
+        <SpeakerContainer
           speakerId="npc-guard"
           displayName="Town Guard"
           color="#28a745"
-          position="top-left"
           maxMessages={3}
           defaultDuration={8000}
           chatContext="dialogue"
+          className="fixed top-5 left-5 z-50 p-4 bg-white rounded-lg shadow-lg border border-green-200"
         >
-          <SpeakerInfo displayName="Town Guard" color="#28a745" />
-          <div className="text-xs text-green-600 font-medium">NPC</div>
-        </PositionedSpeaker>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">
+              G
+            </div>
+            <div>
+              <div className="font-medium text-green-800">Town Guard</div>
+              <div className="text-xs text-green-600">NPC</div>
+            </div>
+          </div>
+          <ChatOverlay maxMessages={3} />
+        </SpeakerContainer>
 
-        <PositionedSpeaker
+        <SpeakerContainer
           speakerId="system"
           displayName="System"
           color="#6c757d"
-          position="bottom-left"
           maxMessages={2}
           defaultDuration={3000}
           chatContext="notifications"
+          className="fixed bottom-5 left-5 z-50 p-4 bg-white rounded-lg shadow-lg border border-gray-200"
         >
-          <SpeakerInfo displayName="System" color="#6c757d" />
-          <div className="text-xs text-gray-600 font-medium">System</div>
-        </PositionedSpeaker>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold">
+              S
+            </div>
+            <div>
+              <div className="font-medium text-gray-800">System</div>
+              <div className="text-xs text-gray-600">System</div>
+            </div>
+          </div>
+          <ChatOverlay maxMessages={2} />
+        </SpeakerContainer>
 
-        <PositionedSpeaker
+        <SpeakerContainer
           speakerId="npc-trader"
           displayName="Merchant"
           color="#ffc107"
-          position="bottom-right"
           maxMessages={3}
           defaultDuration={6000}
           chatContext="trade"
+          className="fixed bottom-5 right-5 z-50 p-4 bg-white rounded-lg shadow-lg border border-yellow-200"
         >
-          <SpeakerInfo displayName="Merchant" color="#ffc107" />
-          <div className="text-xs text-yellow-600 font-medium">Trader</div>
-        </PositionedSpeaker>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold">
+              M
+            </div>
+            <div>
+              <div className="font-medium text-yellow-800">Merchant</div>
+              <div className="text-xs text-yellow-600">Trader</div>
+            </div>
+          </div>
+          <ChatOverlay maxMessages={3} />
+        </SpeakerContainer>
 
         {/* Block-Positioned Speaker Test Section */}
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
@@ -296,9 +313,8 @@ export default function DemoPage() {
             Block-Positioned Speaker Test
           </h2>
           <p className="text-gray-600 mb-4">
-            This section demonstrates a speaker component positioned in normal document flow (not fixed to viewport). 
-            The Innkeeper appears as a standard block element within the page content, allowing you to observe 
-            how chat balloons behave when the speaker container is part of the document flow.
+            This demonstrates a speaker component positioned in normal document flow. 
+            The Innkeeper appears as a standard block element within the page content.
           </p>
           
           <div className="flex items-center gap-4 mb-6">
@@ -313,43 +329,37 @@ export default function DemoPage() {
             </div>
           </div>
 
-          {/* Block-positioned Innkeeper Container - completely custom styling */}
           <div className="relative">
             <SpeakerContainer
               speakerId="npc-innkeeper"
+              displayName="Innkeeper"
+              color="#dc3545"
               maxMessages={3}
               defaultDuration={7000}
               chatContext="dialogue"
               className="w-full max-w-md mx-auto p-4 bg-red-50 border border-red-200 rounded-lg"
             >
-              {/* Custom speaker UI - user has complete control */}
               <div className="flex items-center gap-3 mb-2">
-                <SpeakerAvatar displayName="Innkeeper" color="#dc3545" size="large" />
+                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  🏠
+                </div>
                 <div>
-                  <SpeakerName>🏠 The Innkeeper</SpeakerName>
+                  <div className="font-medium text-red-800">The Innkeeper</div>
                   <div className="text-xs text-red-600">Available for service</div>
                 </div>
               </div>
+              <ChatOverlay maxMessages={3} />
             </SpeakerContainer>
-          </div>
-          
-          <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
-            <p className="text-red-800 text-sm">
-              <strong>Positioning Test:</strong> Unlike the fixed-positioned speakers in corners, 
-              this Innkeeper component flows with the document. Notice how the chat balloons 
-              appear relative to this component's position in the page layout.
-            </p>
           </div>
         </div>
 
         {/* Chat Log Component */}
         <div className="mt-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            Chat Log - Full Message History with Speaker Support
+            Chat Log - Full Message History
           </h2>
           <p className="text-gray-600 mb-4">
-            This component shows the complete history of all messages from all speakers, 
-            with speaker filtering, search functionality, and export capabilities.
+            Complete history of all messages from all speakers with filtering and search.
           </p>
           <ChatLog 
             maxHeight="500px"
@@ -359,18 +369,17 @@ export default function DemoPage() {
           />
         </div>
 
-        {/* New Context-Based Architecture Demo */}
+        {/* Context-Based Architecture Demo */}
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            New Context-Based Architecture Examples
+            Context-Based Architecture Examples
           </h2>
           <p className="text-gray-600 mb-6">
-            These examples show the new SpeakerProvider + ChatOverlay pattern that eliminates prop drilling.
-            Notice how ChatOverlay doesn't need any speaker-specific props!
+            These examples show the modern SpeakerContainer + ChatOverlay pattern.
+            Notice how ChatOverlay doesn&apos;t need any speaker-specific props!
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Example 1: Direct SpeakerProvider usage */}
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-700 mb-3">Context-Based Composition</h4>
               <div className="bg-gray-50 p-3 rounded border mb-3">
@@ -387,6 +396,7 @@ export default function DemoPage() {
                     <div className="font-medium text-purple-800">Context Demo</div>
                     <div className="text-xs text-purple-600">No prop drilling!</div>
                   </div>
+                  <ChatOverlay maxMessages={2} />
                 </SpeakerContainer>
               </div>
               <button
@@ -397,7 +407,6 @@ export default function DemoPage() {
               </button>
             </div>
 
-            {/* Example 2: Multiple components sharing context */}
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-700 mb-3">Shared Context Example</h4>
               <div className="bg-gray-50 p-3 rounded border mb-3">
@@ -416,6 +425,7 @@ export default function DemoPage() {
                   <div className="text-xs text-green-600 pl-10">
                     Multiple UI components can share the same speaker context
                   </div>
+                  <ChatOverlay maxMessages={2} />
                 </SpeakerContainer>
               </div>
               <button
@@ -428,62 +438,37 @@ export default function DemoPage() {
           </div>
 
           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="font-medium text-blue-800 mb-2">🎯 Key Architecture Benefits:</h4>
+            <h4 className="font-medium text-blue-800 mb-2">🎯 Modern Architecture Benefits:</h4>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• <strong>Zero Prop Drilling:</strong> ChatOverlay automatically gets speaker context</li>
-              <li>• <strong>Clean Composition:</strong> SpeakerProvider wraps any content you want</li>
+              <li>• <strong>Clean Composition:</strong> SpeakerContainer wraps any content you want</li>
               <li>• <strong>Implicit Filtering:</strong> ChatOverlay shows only messages from its context speaker</li>
               <li>• <strong>Better Testing:</strong> Components can be tested independently</li>
-              <li>• <strong>Flexible Usage:</strong> Use SpeakerContainer (wrapper) or SpeakerProvider (direct)</li>
+              <li>• <strong>Full Control:</strong> Use className and style for complete customization</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-8 bg-gray-50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-3">
-            Usage Examples: Before vs After Context Architecture
+            Modern Usage Pattern
           </h3>
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
-              <h4 className="text-md font-medium text-gray-600 mb-2">1. New Context-Based Pattern (Recommended)</h4>
+              <h4 className="text-md font-medium text-gray-600 mb-2">Context-Based Pattern (Current)</h4>
               <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
-{`// BEFORE: Prop drilling through SpeakerContainer
-<SpeakerContainer 
-  speakerId="player1" 
-  maxMessages={3}           // ← Passed through to ChatOverlay
-  chatOverlayClassName=""   // ← Passed through to ChatOverlay
->
-  <MyContent />
-</SpeakerContainer>
-
-// AFTER: Context-based, no prop drilling
-<SpeakerProvider speakerId="player1" displayName="Alice" color="#007bff">
-  <MyContent />
-  <ChatOverlay maxMessages={3} />  {/* ← Gets speaker context automatically */}
-</SpeakerProvider>`}
+{`// Modern: Context-based, no prop drilling
+<SpeakerContainer speakerId="player1" displayName="Alice" color="#007bff">
+  <MyCustomUI />
+  <ChatOverlay maxMessages={3} />  {/* Gets speaker context automatically */}
+</SpeakerContainer>`}
               </pre>
             </div>
 
             <div>
-              <h4 className="text-md font-medium text-gray-600 mb-2">2. Using Helper Components (Quick Setup)</h4>
+              <h4 className="text-md font-medium text-gray-600 mb-2">Multiple ChatOverlays in Same Context</h4>
               <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
-{`import { PositionedSpeaker, SpeakerInfo } from '@/components/SpeakerContainer/helpers';
-
-// Quick positioned speaker with built-in UI
-<PositionedSpeaker
-  speakerId="player1"
-  position="top-right"
-  maxMessages={3}
->
-  <SpeakerInfo displayName="Alice" color="#007bff" />
-</PositionedSpeaker>`}
-              </pre>
-            </div>
-
-            <div>
-              <h4 className="text-md font-medium text-gray-600 mb-2">3. Multiple ChatOverlays in Same Context</h4>
-              <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
-{`<SpeakerProvider speakerId="player1" displayName="Alice" color="#007bff">
+{`<SpeakerContainer speakerId="player1" displayName="Alice" color="#007bff">
   <div className="player-ui">
     <PlayerInfo />
   </div>
@@ -491,21 +476,6 @@ export default function DemoPage() {
   {/* Both overlays automatically filter to player1 messages */}
   <ChatOverlay maxMessages={3} className="main-chat" />
   <ChatOverlay maxMessages={1} className="notification-chat" />
-</SpeakerProvider>`}
-              </pre>
-            </div>
-
-            <div>
-              <h4 className="text-md font-medium text-gray-600 mb-2">4. Backward Compatible Usage</h4>
-              <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
-{`// Existing SpeakerContainer still works (now uses context internally)
-<SpeakerContainer 
-  speakerId="player1" 
-  displayName="Alice" 
-  color="#007bff"
-  maxMessages={3}
->
-  <MyContent />
 </SpeakerContainer>`}
               </pre>
             </div>
@@ -513,8 +483,8 @@ export default function DemoPage() {
           
           <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
             <p className="text-green-800 text-sm">
-              <strong>🎉 Architecture Benefits:</strong> The new context-based approach eliminates prop drilling, 
-              provides cleaner component boundaries, and makes testing easier while maintaining full backward compatibility!
+              <strong>🎉 Clean Architecture:</strong> The modern context-based approach eliminates prop drilling, 
+              provides cleaner component boundaries, and makes testing easier!
             </p>
           </div>
         </div>

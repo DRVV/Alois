@@ -1,4 +1,3 @@
-import React from 'react';
 import { useChatService } from './chatService';
 import { useSpeakerRegistration } from '@/hooks/useSpeakerRegistration';
 import { ChatMessage, SpeakerConfig, MessageOptions, SpeakerStats } from '@/components/ChatOverlay/types';
@@ -99,68 +98,5 @@ export const useSpeakerService = (
     // State
     messageCount,
     lastMessageTime,
-  };
-};
-
-/**
- * Multi-speaker service hook - manages multiple speakers at once
- * Useful for components that need to handle multiple speakers
- */
-export const useMultiSpeakerService = (speakers: Array<{ id: string; config: SpeakerServiceConfig }>) => {
-  const chatService = useChatService();
-  
-  // Use shared registration logic for each speaker
-  const registrations = speakers.map(({ id, config }) => 
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useSpeakerRegistration(id, config)
-  );
-
-  // Create speaker services for each speaker
-  const speakerServices = React.useMemo(() => {
-    return speakers.reduce((acc, { id, config }) => {
-      acc[id] = {
-        say: (message: string, options?: Omit<MessageOptions, 'speakerDisplayName'>) => {
-          chatService.sendMessage(id, message, {
-            duration: config.defaultDuration || 5000,
-            chatContext: config.chatContext,
-            speakerDisplayName: config.displayName || id,
-            ...options,
-          });
-        },
-        getMessages: () => chatService.getMessages({ speakerId: id }),
-        getVisibleMessages: (maxMessages?: number) => chatService.getVisibleMessages(maxMessages, id),
-        getStats: () => {
-          const allStats = chatService.getSpeakerStats();
-          return allStats.find(stat => stat.speakerId === id);
-        },
-      };
-      return acc;
-    }, {} as Record<string, {
-      say: (message: string, options?: Omit<MessageOptions, 'speakerDisplayName'>) => void;
-      getMessages: () => ChatMessage[];
-      getVisibleMessages: (maxMessages?: number) => ChatMessage[];
-      getStats: () => SpeakerStats | undefined;
-    }>);
-  }, [speakers, chatService]);
-
-  return {
-    speakers: speakerServices,
-    getAllMessages: () => chatService.getMessages(),
-    getAllVisibleMessages: (maxMessages?: number) => chatService.getVisibleMessages(maxMessages),
-    getAllStats: () => chatService.getSpeakerStats(),
-    clearAll: () => chatService.clearChat(),
-  };
-};
-
-/**
- * Speaker factory - creates speaker service instances
- * Useful for dynamic speaker creation
- */
-export const createSpeakerService = (speakerId: string, config: SpeakerServiceConfig = {}) => {
-  return {
-    id: speakerId,
-    config,
-    // This would be used with useSpeakerService hook
-    useService: () => useSpeakerService(speakerId, config),
   };
 };

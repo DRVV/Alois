@@ -1,11 +1,12 @@
 import React from 'react';
+import { ChatMessage } from '@/components/ChatOverlay/types';
 
 /**
  * Performance optimization utilities for the chat system
  */
 
 // Memoized message filtering function
-export const filterMessages = (messages: any[], filters: {
+export const filterMessages = (messages: ChatMessage[], filters: {
   speakerId?: string;
   searchTerm?: string;
   maxMessages?: number;
@@ -40,6 +41,7 @@ export const useMessageFilter = () => {
 };
 
 // Debounced function creator
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createDebounced = <T extends (...args: any[]) => any>(
   func: T,
   delay: number
@@ -53,6 +55,7 @@ export const createDebounced = <T extends (...args: any[]) => any>(
 };
 
 // Throttled function creator
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createThrottled = <T extends (...args: any[]) => any>(
   func: T,
   limit: number
@@ -84,21 +87,22 @@ export const useExpensiveCalculation = <T>(
   calculate: () => T,
   dependencies: React.DependencyList
 ): T => {
-  return React.useMemo(calculate, dependencies);
+  return React.useMemo(() => calculate(), dependencies);
 };
 
 // Hook for stable callback references
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const useStableCallback = <T extends (...args: any[]) => any>(
   callback: T,
   dependencies: React.DependencyList
 ): T => {
-  return React.useCallback(callback, dependencies);
+  return React.useCallback((...args: Parameters<T>) => callback(...args), dependencies) as T;
 };
 
 // Performance monitoring hook
 export const usePerformanceMonitor = (componentName: string) => {
   const renderCount = React.useRef(0);
-  const startTime = React.useRef<number>();
+  const startTime = React.useRef<number>(0);
   
   React.useEffect(() => {
     renderCount.current += 1;
@@ -116,7 +120,7 @@ export const usePerformanceMonitor = (componentName: string) => {
   
   const logPerformance = React.useCallback(() => {
     console.log(`${componentName} has rendered ${renderCount.current} times`);
-  }, [componentName, renderCount]);
+  }, [componentName]);
   
   return {
     renderCount: renderCount.current,
