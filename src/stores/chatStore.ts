@@ -1,18 +1,34 @@
 import { create } from 'zustand';
-import { ChatMessage } from '@/components/ChatOverlay/types';
+import { ChatMessage, SpeakerConfig, MessageOptions, SpeakerStats } from '@/components/ChatOverlay/types';
 
 interface ChatStore {
   overlayMessages: ChatMessage[];
   logMessages: ChatMessage[];
   timeouts: Map<string, NodeJS.Timeout>;
-  addMessage: (content: string, duration?: number) => void;
+  speakers: Map<string, SpeakerConfig>;
+  activeSpeakers: Set<string>;
+  
+  // Enhanced methods
+  addMessage: (speaker: string, content: string, options?: MessageOptions) => void;
+  addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => void;
   removeOverlayMessage: (id: string) => void;
   clearAllOverlayMessages: () => void;
   clearAllLogMessages: () => void;
   getVisibleOverlayMessages: (maxMessages: number) => ChatMessage[];
+  getMessagesBySpeaker: (speakerId: string) => ChatMessage[];
+  getSpeakerStats: () => SpeakerStats[];
+  
+  // Legacy method for backward compatibility
+  addLegacyMessage: (content: string, duration?: number) => void;
 }
 
-const generateId = () => {
+const generateSpeakerBasedId = (speaker: string) => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  return `${speaker}-${timestamp}-${random}`;
+};
+
+const generateLegacyId = () => {
   return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
@@ -20,20 +36,38 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   overlayMessages: [],
   logMessages: [],
   timeouts: new Map(),
+  speakers: new Map(),
+  activeSpeakers: new Set(),
 
-  addMessage: (content: string, duration: number = 5000) => {
-    const id = generateId();
+  addMessage: (speaker: string, content: string, options: MessageOptions = {}) => {
+    const { duration = 5000, chatContext, speakerDisplayName } = options;
+    const id = generateSpeakerBasedId(speaker);
+    
+    // Auto-register speaker if not exists
+    const { speakers } = get();
+    if (!speakers.has(speaker)) {
+      get().addSpeaker(speaker, {
+        displayName: speakerDisplayName || speaker,
+        defaultDuration: duration,
+        isActive: true,
+      });
+    }
+
     const newMessage: ChatMessage = {
       id,
       content,
       timestamp: new Date(),
       duration,
+      speaker,
+      speakerDisplayName: speakerDisplayName || speakers.get(speaker)?.displayName || speaker,
+      chatContext,
     };
 
     // Add message to both overlay and log
     set((state) => ({
       overlayMessages: [...state.overlayMessages, newMessage],
       logMessages: [...state.logMessages, newMessage],
+      activeSpeakers: new Set(state.activeSpeakers).add(speaker),
     }));
 
     // Set timeout for auto-removal from overlay only (only if duration > 0)
@@ -47,6 +81,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         timeouts: new Map(state.timeouts).set(id, timeoutId),
       }));
     }
+  },
+
+  addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => {
+    set((state) => ({
+      speakers: new Map(state.speakers).set(speakerId, {
+        id: speakerId,
+        ...config,
+      }),
+    }));
   },
 
   removeOverlayMessage: (id: string) => {
@@ -92,5 +135,37 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   getVisibleOverlayMessages: (maxMessages: number) => {
     const { overlayMessages } = get();
     return overlayMessages.slice(-maxMessages);
+  },
+
+  getMessagesBySpeaker: (speakerId: string) => {
+    const { logMessages } = get();
+    return logMessages.filter(msg => msg.speaker === speakerId);
+  },
+
+  getSpeakerStats: () => {
+    const { logMessages, speakers } = get();
+    const stats = new Map<string, { count: number; lastMessage?: Date }>();
+    
+    logMessages.forEach(msg => {
+      const current = stats.get(msg.speaker) || { count: 0 };
+      stats.set(msg.speaker, {
+        count: current.count + 1,
+        lastMessage: !current.lastMessage || msg.timestamp > current.lastMessage 
+          ? msg.timestamp 
+          : current.lastMessage,
+      });
+    });
+
+    return Array.from(stats.entries()).map(([speakerId, data]) => ({
+      speakerId,
+      displayName: speakers.get(speakerId)?.displayName || speakerId,
+      messageCount: data.count,
+      lastMessageTime: data.lastMessage,
+    }));
+  },
+
+  // Legacy method for backward compatibility
+  addLegacyMessage: (content: string, duration: number = 5000) => {
+    get().addMessage('unknown', content, { duration, speakerDisplayName: 'Unknown' });
   },
 }));

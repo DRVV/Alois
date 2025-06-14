@@ -153,3 +153,42 @@
   padding: 1px 2px;
   border-radius: 2px;
 }
+
+.speakerFilter {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.speakerFilter:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.messageSpeaker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.speakerName {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.025em;
+}
+
+.chatContext {
+  font-size: 11px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-style: italic;
+}

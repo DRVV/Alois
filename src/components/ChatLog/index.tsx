@@ -5,24 +5,55 @@ import { useChatStore } from '@/stores/chatStore';
 import { ChatLogProps } from './types';
 import styles from './ChatLog.module.css';
 
-const ChatLog: React.FC<ChatLogProps> = ({
+interface ExtendedChatLogProps extends ChatLogProps {
+  showSpeakers?: boolean;
+  filterBySpeaker?: string;
+}
+
+const ChatLog: React.FC<ExtendedChatLogProps> = ({
   className = '',
   maxHeight = '400px',
   showTimestamps = true,
   showSearch = true,
+  showSpeakers = true,
+  filterBySpeaker,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSpeaker, setSelectedSpeaker] = useState<string>(filterBySpeaker || '');
   const messages = useChatStore((state) => state.logMessages);
+  const speakers = useChatStore((state) => state.speakers);
+  const getSpeakerStats = useChatStore((state) => state.getSpeakerStats);
   const clearAllMessages = useChatStore((state) => state.clearAllLogMessages);
 
-  // Filter messages based on search term
+  // Get unique speakers from messages
+  const availableSpeakers = useMemo(() => {
+    const speakerSet = new Set(messages.map(msg => msg.speaker));
+    return Array.from(speakerSet).map(speakerId => ({
+      id: speakerId,
+      displayName: speakers.get(speakerId)?.displayName || speakerId,
+      color: speakers.get(speakerId)?.color || '#007bff',
+    }));
+  }, [messages, speakers]);
+
+  // Filter messages based on search term and selected speaker
   const filteredMessages = useMemo(() => {
-    if (!searchTerm.trim()) return messages;
+    let filtered = messages;
     
-    return messages.filter(message =>
-      message.content.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [messages, searchTerm]);
+    // Filter by speaker if selected
+    if (selectedSpeaker) {
+      filtered = filtered.filter(msg => msg.speaker === selectedSpeaker);
+    }
+    
+    // Filter by search term
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(message =>
+        message.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (message.speakerDisplayName || message.speaker).toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return filtered;
+  }, [messages, searchTerm, selectedSpeaker]);
 
   // Highlight search terms in message content
   const highlightSearchTerm = (content: string, term: string) => {
@@ -94,6 +125,21 @@ const ChatLog: React.FC<ChatLogProps> = ({
         </div>
         
         <div className={styles.controls}>
+          {showSpeakers && availableSpeakers.length > 1 && (
+            <select
+              value={selectedSpeaker}
+              onChange={(e) => setSelectedSpeaker(e.target.value)}
+              className={styles.speakerFilter}
+            >
+              <option value="">All Speakers</option>
+              {availableSpeakers.map(speaker => (
+                <option key={speaker.id} value={speaker.id}>
+                  {speaker.displayName}
+                </option>
+              ))}
+            </select>
+          )}
+          
           {showSearch && (
             <input
               type="text"
@@ -142,21 +188,39 @@ const ChatLog: React.FC<ChatLogProps> = ({
             </div>
           </div>
         ) : (
-          filteredMessages.map((message) => (
-            <div key={message.id} className={styles.messageItem}>
-              <div className={styles.messageContent}>
-                {highlightSearchTerm(message.content, searchTerm)}
-              </div>
-              {showTimestamps && (
-                <div className={styles.messageTimestamp}>
-                  <span>{formatTimestamp(message.timestamp)}</span>
-                  <span className={styles.messageDuration}>
-                    {formatDuration(message.duration)}
-                  </span>
+          filteredMessages.map((message) => {
+            const speaker = availableSpeakers.find(s => s.id === message.speaker);
+            return (
+              <div key={message.id} className={styles.messageItem}>
+                {showSpeakers && (
+                  <div className={styles.messageSpeaker}>
+                    <span 
+                      className={styles.speakerName}
+                      style={{ color: speaker?.color || '#007bff' }}
+                    >
+                      {message.speakerDisplayName || message.speaker}
+                    </span>
+                    {message.chatContext && (
+                      <span className={styles.chatContext}>
+                        [{message.chatContext}]
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className={styles.messageContent}>
+                  {highlightSearchTerm(message.content, searchTerm)}
                 </div>
-              )}
-            </div>
-          ))
+                {showTimestamps && (
+                  <div className={styles.messageTimestamp}>
+                    <span>{formatTimestamp(message.timestamp)}</span>
+                    <span className={styles.messageDuration}>
+                      {formatDuration(message.duration)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </div>

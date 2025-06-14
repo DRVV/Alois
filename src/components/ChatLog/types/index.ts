@@ -3,6 +3,8 @@ export interface ChatLogProps {
   maxHeight?: string;
   showTimestamps?: boolean;
   showSearch?: boolean;
+  showSpeakers?: boolean;
+  filterBySpeaker?: string;
 }
 
 export interface ChatLogMessage {
@@ -10,4 +12,7 @@ export interface ChatLogMessage {
   content: string;
   timestamp: Date;
   duration?: number;
+  speaker: string;
+  speakerDisplayName?: string;
+  chatContext?: string;
 }
