@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useChatOverlay } from '@/components/ChatOverlay';
+import ChatLog from '@/components/ChatLog';
 
 export default function DemoPage() {
   const { addMessage, clearMessages, ChatOverlay } = useChatOverlay(5000);
@@ -32,6 +33,10 @@ export default function DemoPage() {
 
   const handleCustomDuration = () => {
     addMessage('This message will disappear in 10 seconds!', 10000);
+  };
+
+  const handlePermanentMessage = () => {
+    addMessage('This is a permanent message that will stay in the log forever!', 0);
   };
 
   return (
@@ -76,6 +81,13 @@ export default function DemoPage() {
             </button>
             
             <button
+              onClick={handlePermanentMessage}
+              className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+            >
+              Send Permanent Message
+            </button>
+            
+            <button
               onClick={clearMessages}
               className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
             >
@@ -110,12 +122,29 @@ export default function DemoPage() {
           <ChatOverlay maxMessages={5} />
         </div>
 
+        {/* Chat Log Component */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            Chat Log - Full Message History
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This component shows the complete history of all messages sent, including those that have 
+            auto-disappeared from the overlay. It includes search functionality and export capabilities.
+          </p>
+          <ChatLog 
+            maxHeight="500px"
+            showTimestamps={true}
+            showSearch={true}
+          />
+        </div>
+
         <div className="mt-8 bg-gray-50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-3">
             Usage Example
           </h3>
           <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
 {`import { useChatOverlay } from '@/components/ChatOverlay';
+import ChatLog from '@/components/ChatLog';
 
 function MyComponent() {
   const { addMessage, ChatOverlay } = useChatOverlay(5000);
@@ -125,11 +154,21 @@ function MyComponent() {
   };
   
   return (
-    <div style={{ position: 'relative' }}>
-      <button onClick={handleSendMessage}>
-        Send Message
-      </button>
-      <ChatOverlay maxMessages={5} />
+    <div>
+      {/* Overlay for temporary notifications */}
+      <div style={{ position: 'relative' }}>
+        <button onClick={handleSendMessage}>
+          Send Message
+        </button>
+        <ChatOverlay maxMessages={5} />
+      </div>
+      
+      {/* Full message history */}
+      <ChatLog 
+        maxHeight="400px"
+        showTimestamps={true}
+        showSearch={true}
+      />
     </div>
   );
 }`}

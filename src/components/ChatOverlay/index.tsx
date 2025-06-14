@@ -1,23 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAutoHideMessages } from './hooks/useAutoHideMessages';
+import { useChatStore } from '@/stores/chatStore';
 import { ChatOverlayProps, ChatMessage } from './types';
 import styles from './ChatOverlay.module.css';
 
-interface ChatOverlayInternalProps extends ChatOverlayProps {
-  messages: ChatMessage[];
-}
-
-const ChatOverlay: React.FC<ChatOverlayInternalProps> = ({
+const ChatOverlay: React.FC<ChatOverlayProps> = ({
   className = '',
   maxMessages = 5,
-  messages,
 }) => {
   const [exitingMessages, setExitingMessages] = useState<Set<string>>(new Set());
-
-  // Limit the number of visible messages
-  const visibleMessages = messages.slice(-maxMessages);
+  const getVisibleOverlayMessages = useChatStore((state) => state.getVisibleOverlayMessages);
+  
+  // Get only the messages that should be visible in the overlay
+  const visibleMessages = getVisibleOverlayMessages(maxMessages);
 
   if (visibleMessages.length === 0) {
     return null;
@@ -42,17 +38,19 @@ const ChatOverlay: React.FC<ChatOverlayInternalProps> = ({
 };
 
 // Create a hook to control the overlay from parent components
-export const useChatOverlay = (duration: number = 5000) => {
-  const { messages, addAutoHideMessage, clearAllMessages } = useAutoHideMessages(duration);
+export const useChatOverlay = (defaultDuration: number = 5000) => {
+  const addMessage = useChatStore((state) => state.addMessage);
+  const clearMessages = useChatStore((state) => state.clearAllOverlayMessages);
+  const messages = useChatStore((state) => state.overlayMessages);
 
   const ChatOverlayComponent: React.FC<ChatOverlayProps> = (props) => (
-    <ChatOverlay {...props} messages={messages} />
+    <ChatOverlay {...props} />
   );
 
   return {
     messages,
-    addMessage: addAutoHideMessage,
-    clearMessages: clearAllMessages,
+    addMessage: (content: string, duration?: number) => addMessage(content, duration || defaultDuration),
+    clearMessages,
     ChatOverlay: ChatOverlayComponent,
   };
 };
