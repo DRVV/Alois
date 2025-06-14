@@ -16,6 +16,7 @@ interface ChatStore {
   clearAllOverlayMessages: () => void;
   clearAllLogMessages: () => void;
   getVisibleOverlayMessages: (maxMessages: number) => ChatMessage[];
+  getVisibleOverlayMessagesBySpeaker: (speakerId: string, maxMessages: number) => ChatMessage[];
   getMessagesBySpeaker: (speakerId: string) => ChatMessage[];
   getSpeakerStats: () => SpeakerStats[];
   
@@ -160,6 +161,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   getVisibleOverlayMessages: (maxMessages: number) => {
     const { overlayMessages } = get();
     return overlayMessages.slice(-maxMessages);
+  },
+
+  getVisibleOverlayMessagesBySpeaker: (speakerId: string, maxMessages: number) => {
+    const { overlayMessages } = get();
+    const speakerMessages = overlayMessages.filter(msg => msg.speaker === speakerId);
+    return speakerMessages.slice(-maxMessages);
   },
 
   getMessagesBySpeaker: (speakerId: string) => {

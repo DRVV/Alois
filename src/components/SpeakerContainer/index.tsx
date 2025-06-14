@@ -34,10 +34,12 @@ const SpeakerContainer: React.FC<SpeakerContainerProps> = ({
     chatContext,
   });
 
-  const positionClass = styles[position.replace('-', '')]; // Convert 'top-left' to 'topleft'
+  const positionClass = position ? styles[position.replace('-', '')] : ''; // Convert 'top-left' to 'topleft'
+  const isBlockPositioned = className.includes('block-positioned-speaker');
+  const containerClass = isBlockPositioned ? styles.blockPositioned : `${styles.speakerContainer} ${positionClass}`;
 
   return (
-    <div className={`${styles.speakerContainer} ${positionClass} ${className}`}>
+    <div className={`${containerClass} ${className}`}>
       {children && (
         <div className={styles.speakerInfo}>
           <div 

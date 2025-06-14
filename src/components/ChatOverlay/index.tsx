@@ -19,14 +19,17 @@ const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
   filterBySpeaker,
 }) => {
   const getVisibleOverlayMessages = useChatStore((state) => state.getVisibleOverlayMessages);
+  const getVisibleOverlayMessagesBySpeaker = useChatStore((state) => state.getVisibleOverlayMessagesBySpeaker);
   const speakers = useChatStore((state) => state.speakers);
   
-  // Get only the messages that should be visible in the overlay
-  let visibleMessages = getVisibleOverlayMessages(maxMessages);
-  
-  // Filter by speaker if specified
+  // Get messages - use per-speaker method if filtering by speaker, otherwise use global method
+  let visibleMessages: any[];
   if (filterBySpeaker) {
-    visibleMessages = visibleMessages.filter(msg => msg.speaker === filterBySpeaker);
+    // Use per-speaker method to get messages with local constraint
+    visibleMessages = getVisibleOverlayMessagesBySpeaker(filterBySpeaker, maxMessages);
+  } else {
+    // Use global method for backward compatibility
+    visibleMessages = getVisibleOverlayMessages(maxMessages);
   }
 
   if (visibleMessages.length === 0) {

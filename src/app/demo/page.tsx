@@ -35,6 +35,13 @@ export default function DemoPage() {
     chatContext: 'trade'
   });
 
+  const innkeeperChat = useSpeakerContainer('npc-innkeeper', {
+    displayName: 'Innkeeper',
+    color: '#dc3545',
+    defaultDuration: 7000,
+    chatContext: 'dialogue'
+  });
+
   const handlePlayerMessage = () => {
     const messages = [
       'Hello! I just entered the town.',
@@ -85,6 +92,19 @@ export default function DemoPage() {
     
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
     traderChat.addMessage(randomMessage);
+  };
+
+  const handleInnkeeperMessage = () => {
+    const messages = [
+      'Welcome to my inn!',
+      'Room for the night?',
+      'We serve the best ale in town.',
+      'Safe travels, friend.',
+      'The beds are clean and warm.',
+    ];
+    
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    innkeeperChat.addMessage(randomMessage);
   };
 
   const handleMultipleSpeakers = () => {
@@ -189,6 +209,13 @@ export default function DemoPage() {
             >
               Clear Messages
             </button>
+            
+            <button
+              onClick={handleInnkeeperMessage}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Innkeeper Message
+            </button>
           </div>
         </div>
 
@@ -272,6 +299,51 @@ export default function DemoPage() {
         >
           <div className="text-xs text-yellow-600 font-medium">Trader</div>
         </SpeakerContainer>
+
+        {/* Block-Positioned Speaker Test Section */}
+        <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            Block-Positioned Speaker Test
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This section demonstrates a speaker component positioned in normal document flow (not fixed to viewport). 
+            The Innkeeper appears as a standard block element within the page content, allowing you to observe 
+            how chat balloons behave when the speaker container is part of the document flow.
+          </p>
+          
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              onClick={handleInnkeeperMessage}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Innkeeper Message
+            </button>
+            <div className="text-sm text-gray-500">
+              Click to see where balloons appear for a block-positioned speaker
+            </div>
+          </div>
+
+          {/* Block-positioned Innkeeper Container */}
+          <div className="relative">
+            <SpeakerContainer
+              speakerId="npc-innkeeper"
+              displayName="Innkeeper"
+              color="#dc3545"
+              maxMessages={3}
+              defaultDuration={7000}
+              chatContext="dialogue"
+              className="block-positioned-speaker"
+            />
+          </div>
+          
+          <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
+            <p className="text-red-800 text-sm">
+              <strong>Positioning Test:</strong> Unlike the fixed-positioned speakers in corners, 
+              this Innkeeper component flows with the document. Notice how the chat balloons 
+              appear relative to this component's position in the page layout.
+            </p>
+          </div>
+        </div>
 
         {/* Chat Log Component */}
         <div className="mt-8">
