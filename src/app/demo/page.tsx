@@ -1,33 +1,34 @@
 'use client';
 
 import React from 'react';
-import { useChatOverlay } from '@/components/ChatOverlay';
+import { useSpeakerContainer } from '@/components/SpeakerContainer';
+import SpeakerContainer from '@/components/SpeakerContainer';
 import ChatLog from '@/components/ChatLog';
 
 export default function DemoPage() {
   // Multiple speaker instances with different configurations
-  const playerChat = useChatOverlay('player1', {
+  const playerChat = useSpeakerContainer('player1', {
     displayName: 'Alice',
     color: '#007bff',
     defaultDuration: 5000,
     chatContext: 'game'
   });
 
-  const npcChat = useChatOverlay('npc-guard', {
+  const npcChat = useSpeakerContainer('npc-guard', {
     displayName: 'Town Guard',
     color: '#28a745',
     defaultDuration: 8000,
     chatContext: 'dialogue'
   });
 
-  const systemChat = useChatOverlay('system', {
+  const systemChat = useSpeakerContainer('system', {
     displayName: 'System',
     color: '#6c757d',
     defaultDuration: 3000,
     chatContext: 'notifications'
   });
 
-  const traderChat = useChatOverlay('npc-trader', {
+  const traderChat = useSpeakerContainer('npc-trader', {
     displayName: 'Merchant',
     color: '#ffc107',
     defaultDuration: 6000,
@@ -193,31 +194,84 @@ export default function DemoPage() {
 
         <div className="bg-white rounded-lg shadow-lg p-6 relative min-h-96">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            Demo Container
+            Multi-Speaker Demo Container
           </h2>
           <p className="text-gray-600 mb-4">
-            This container demonstrates how the chat overlay appears in the top-right corner 
-            relative to its parent component. Messages from different speakers appear with 
-            unique colors and display names.
+            Now each speaker has their own positioned container! Alice appears in the top-right, 
+            Town Guard in the top-left, System messages in the bottom-left, and Merchant in the bottom-right.
+            Each speaker acts like an independent person with their own chat space.
           </p>
           
           <div className="text-sm text-gray-500 space-y-2">
-            <p><strong>New Speaker-Aware Features:</strong></p>
+            <p><strong>Enhanced Speaker-Specific Features:</strong></p>
             <ul className="list-disc list-inside space-y-1">
-              <li>Speaker identification with display names</li>
-              <li>Color-coded messages by speaker</li>
-              <li>Speaker-specific message durations</li>
-              <li>Chat context support (game, dialogue, trade, etc.)</li>
-              <li>Centralized logging across all speakers</li>
-              <li>Smart ID generation: speakername-timestamp-random</li>
-              <li>Multiple component instances sharing state</li>
-              <li>Speaker filtering and search in chat log</li>
+              <li>✨ <strong>Individual speaker containers</strong> - Each speaker has their own positioned space</li>
+              <li>🎯 <strong>Speaker-specific positioning</strong> - Top-left, top-right, bottom-left, bottom-right</li>
+              <li>👤 <strong>Speaker avatars and names</strong> - Visual identification for each speaker</li>
+              <li>🎨 <strong>Color-coded messages</strong> - Unique colors per speaker</li>
+              <li>⏱️ <strong>Speaker-specific durations</strong> - Different message display times</li>
+              <li>🏷️ <strong>Chat context support</strong> - Game, dialogue, trade, notifications</li>
+              <li>📝 <strong>Centralized logging</strong> - All messages still logged together</li>
+              <li>🔍 <strong>Speaker filtering</strong> - Each container only shows its own messages</li>
             </ul>
           </div>
-
-          {/* Chat Overlay Component - Shows all speakers' messages */}
-          <playerChat.ChatOverlay maxMessages={5} />
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-blue-800 text-sm">
+              <strong>Try it:</strong> Click the buttons above to see messages appear in different corners of the screen. 
+              Each speaker now has their own dedicated space, making conversations feel more natural and organized!
+            </p>
+          </div>
         </div>
+
+        {/* Individual Speaker Containers positioned around the screen */}
+        <SpeakerContainer
+          speakerId="player1"
+          displayName="Alice"
+          color="#007bff"
+          position="top-right"
+          maxMessages={3}
+          defaultDuration={5000}
+          chatContext="game"
+        >
+          <div className="text-xs text-blue-600 font-medium">Player</div>
+        </SpeakerContainer>
+
+        <SpeakerContainer
+          speakerId="npc-guard"
+          displayName="Town Guard"
+          color="#28a745"
+          position="top-left"
+          maxMessages={3}
+          defaultDuration={8000}
+          chatContext="dialogue"
+        >
+          <div className="text-xs text-green-600 font-medium">NPC</div>
+        </SpeakerContainer>
+
+        <SpeakerContainer
+          speakerId="system"
+          displayName="System"
+          color="#6c757d"
+          position="bottom-left"
+          maxMessages={2}
+          defaultDuration={3000}
+          chatContext="notifications"
+        >
+          <div className="text-xs text-gray-600 font-medium">System</div>
+        </SpeakerContainer>
+
+        <SpeakerContainer
+          speakerId="npc-trader"
+          displayName="Merchant"
+          color="#ffc107"
+          position="bottom-right"
+          maxMessages={3}
+          defaultDuration={6000}
+          chatContext="trade"
+        >
+          <div className="text-xs text-yellow-600 font-medium">Trader</div>
+        </SpeakerContainer>
 
         {/* Chat Log Component */}
         <div className="mt-8">
@@ -238,22 +292,23 @@ export default function DemoPage() {
 
         <div className="mt-8 bg-gray-50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-3">
-            Speaker-Aware Usage Example
+            New SpeakerContainer Usage Example
           </h3>
           <pre className="bg-gray-800 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">
-{`import { useChatOverlay } from '@/components/ChatOverlay';
+{`import { useSpeakerContainer } from '@/components/SpeakerContainer';
+import SpeakerContainer from '@/components/SpeakerContainer';
 import ChatLog from '@/components/ChatLog';
 
 function MyComponent() {
   // Create speaker-aware chat instances
-  const playerChat = useChatOverlay('player1', {
+  const playerChat = useSpeakerContainer('player1', {
     displayName: 'Alice',
     color: '#007bff',
     defaultDuration: 5000,
     chatContext: 'game'
   });
 
-  const npcChat = useChatOverlay('npc-guard', {
+  const npcChat = useSpeakerContainer('npc-guard', {
     displayName: 'Town Guard', 
     color: '#28a745',
     defaultDuration: 8000,
@@ -270,16 +325,33 @@ function MyComponent() {
   
   return (
     <div>
-      {/* Overlay shows all speakers' messages */}
-      <div style={{ position: 'relative' }}>
-        <button onClick={handlePlayerMessage}>
-          Player Message
-        </button>
-        <button onClick={handleNPCMessage}>
-          NPC Message
-        </button>
-        <playerChat.ChatOverlay maxMessages={5} />
-      </div>
+      {/* Each speaker gets their own positioned container */}
+      <SpeakerContainer
+        speakerId="player1"
+        displayName="Alice"
+        color="#007bff"
+        position="top-right"
+        maxMessages={3}
+      >
+        <div className="text-xs text-blue-600">Player</div>
+      </SpeakerContainer>
+
+      <SpeakerContainer
+        speakerId="npc-guard"
+        displayName="Town Guard"
+        color="#28a745"
+        position="top-left"
+        maxMessages={3}
+      >
+        <div className="text-xs text-green-600">NPC</div>
+      </SpeakerContainer>
+
+      <button onClick={handlePlayerMessage}>
+        Player Message
+      </button>
+      <button onClick={handleNPCMessage}>
+        NPC Message
+      </button>
       
       {/* Full message history with speaker filtering */}
       <ChatLog 

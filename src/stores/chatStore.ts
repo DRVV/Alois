@@ -12,6 +12,7 @@ interface ChatStore {
   addMessage: (speaker: string, content: string, options?: MessageOptions) => void;
   addSpeaker: (speakerId: string, config: Omit<SpeakerConfig, 'id'>) => void;
   removeOverlayMessage: (id: string) => void;
+  startMessageExit: (id: string) => void;
   clearAllOverlayMessages: () => void;
   clearAllLogMessages: () => void;
   getVisibleOverlayMessages: (maxMessages: number) => ChatMessage[];
@@ -61,6 +62,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       speaker,
       speakerDisplayName: speakerDisplayName || speakers.get(speaker)?.displayName || speaker,
       chatContext,
+      animationState: 'entering',
     };
 
     // Add message to both overlay and log
@@ -70,10 +72,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       activeSpeakers: new Set(state.activeSpeakers).add(speaker),
     }));
 
+    // Set animation state to visible after a brief delay
+    setTimeout(() => {
+      set((state) => ({
+        overlayMessages: state.overlayMessages.map(msg => 
+          msg.id === id ? { ...msg, animationState: 'visible' } : msg
+        ),
+      }));
+    }, 50);
+
     // Set timeout for auto-removal from overlay only (only if duration > 0)
     if (duration > 0) {
       const timeoutId = setTimeout(() => {
-        get().removeOverlayMessage(id);
+        get().startMessageExit(id);
       }, duration);
 
       // Store timeout reference
@@ -90,6 +101,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         ...config,
       }),
     }));
+  },
+
+  startMessageExit: (id: string) => {
+    // Set message to exiting state
+    set((state) => ({
+      overlayMessages: state.overlayMessages.map(msg => 
+        msg.id === id ? { ...msg, animationState: 'exiting', isExiting: true } : msg
+      ),
+    }));
+
+    // Remove message after exit animation completes
+    setTimeout(() => {
+      get().removeOverlayMessage(id);
+    }, 300); // Animation duration
   },
 
   removeOverlayMessage: (id: string) => {

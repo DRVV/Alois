@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useChatStore } from '@/stores/chatStore';
 import { ChatOverlayProps, ChatMessage, MessageOptions } from './types';
 import styles from './ChatOverlay.module.css';
@@ -11,14 +11,13 @@ interface ExtendedChatOverlayProps extends ChatOverlayProps {
   filterBySpeaker?: string;
 }
 
-const ChatOverlay: React.FC<ExtendedChatOverlayProps> = ({
+const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
   className = '',
   maxMessages = 5,
   speakerId,
   showSpeakerNames = true,
   filterBySpeaker,
 }) => {
-  const [exitingMessages, setExitingMessages] = useState<Set<string>>(new Set());
   const getVisibleOverlayMessages = useChatStore((state) => state.getVisibleOverlayMessages);
   const speakers = useChatStore((state) => state.speakers);
   
@@ -39,14 +38,24 @@ const ChatOverlay: React.FC<ExtendedChatOverlayProps> = ({
     return speaker?.color || '#007bff';
   };
 
+  const getAnimationClass = (message: ChatMessage) => {
+    switch (message.animationState) {
+      case 'entering':
+        return styles.entering;
+      case 'exiting':
+        return styles.exiting;
+      case 'visible':
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className={`${styles.overlay} ${className}`}>
       {visibleMessages.map((message) => (
         <div
           key={message.id}
-          className={`${styles.messageContainer} ${
-            exitingMessages.has(message.id) ? styles.exiting : ''
-          }`}
+          className={`${styles.messageContainer} ${getAnimationClass(message)}`}
         >
           <div 
             className={styles.messageBubble}
@@ -72,7 +81,9 @@ const ChatOverlay: React.FC<ExtendedChatOverlayProps> = ({
       ))}
     </div>
   );
-};
+});
+
+ChatOverlay.displayName = 'ChatOverlay';
 
 // Speaker-aware hook for controlling the overlay
 export const useChatOverlay = (speakerId: string, options: {

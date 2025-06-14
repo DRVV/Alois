@@ -6,6 +6,8 @@ export interface ChatMessage {
   speaker: string;
   speakerDisplayName?: string;
   chatContext?: string;
+  isExiting?: boolean;
+  animationState?: 'entering' | 'visible' | 'exiting';
 }
 
 export interface SpeakerConfig {

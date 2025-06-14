@@ -12,8 +12,11 @@
 }
 
 .messageContainer {
-  animation: slideUpFadeIn 0.3s ease-out;
   transform-origin: top right;
+}
+
+.messageContainer.entering {
+  animation: slideUpFadeIn 0.3s ease-out;
 }
 
 .messageContainer.exiting {
