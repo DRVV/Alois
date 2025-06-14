@@ -3,7 +3,7 @@
 import React from 'react';
 import { useChatService } from '@/services/chatService';
 import { useSpeakerService } from '@/services/speakerService';
-import { useSpeakerContext } from '@/components/SpeakerContainer/SpeakerContext';
+import { useOptionalSpeakerContext } from '@/hooks/useOptionalSpeakerContext';
 import { ChatOverlayProps, ChatMessage, MessageOptions } from './types';
 import styles from './ChatOverlay.module.css';
 
@@ -23,13 +23,8 @@ const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
   showSpeakerNames = true,
   filterBySpeaker,
 }) => {
-  // Try to get speaker context, fall back to props if not available
-  let speakerContext = null;
-  try {
-    speakerContext = useSpeakerContext();
-  } catch {
-    // Not within a SpeakerProvider, use props instead
-  }
+  // Use safe context hook that returns null if not available
+  const speakerContext = useOptionalSpeakerContext();
 
   // Use context speaker ID if available, otherwise use filterBySpeaker prop
   const effectiveFilterBySpeaker = speakerContext?.speakerId || filterBySpeaker;

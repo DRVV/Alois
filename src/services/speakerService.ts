@@ -1,5 +1,6 @@
 import React from 'react';
 import { useChatService } from './chatService';
+import { useSpeakerRegistration } from '@/hooks/useSpeakerRegistration';
 import { ChatMessage, SpeakerConfig, MessageOptions, SpeakerStats } from '@/components/ChatOverlay/types';
 
 export interface SpeakerServiceConfig {
@@ -40,31 +41,12 @@ export const useSpeakerService = (
 ): SpeakerServiceAPI => {
   const chatService = useChatService();
   
-  const {
-    displayName = speakerId,
-    color = '#007bff',
-    avatar,
-    defaultDuration = 5000,
-    chatContext,
-  } = config;
-
-  // Auto-register speaker on first use - only if not already registered
-  React.useEffect(() => {
-    const existingSpeaker = chatService.getSpeaker(speakerId);
-    if (!existingSpeaker) {
-      chatService.registerSpeaker(speakerId, {
-        displayName,
-        color,
-        avatar,
-        defaultDuration,
-        isActive: true,
-      });
-    }
-  }, [speakerId, displayName, color, avatar, defaultDuration]);
-
+  // Use shared registration logic
+  const registration = useSpeakerRegistration(speakerId, config);
+  
   // Get speaker info
   const speakerConfig = chatService.getSpeaker(speakerId);
-  const isRegistered = speakerConfig !== undefined;
+  const isRegistered = registration.isRegistered;
 
   // Get speaker-specific messages
   const myMessages = chatService.getMessages({ speakerId });
@@ -76,9 +58,9 @@ export const useSpeakerService = (
   // Core messaging function
   const say = (message: string, options: Omit<MessageOptions, 'speakerDisplayName'> = {}) => {
     chatService.sendMessage(speakerId, message, {
-      duration: defaultDuration,
-      chatContext,
-      speakerDisplayName: displayName,
+      duration: registration.defaultDuration,
+      chatContext: registration.chatContext,
+      speakerDisplayName: registration.displayName,
       ...options,
     });
   };
@@ -110,7 +92,7 @@ export const useSpeakerService = (
     
     // Speaker info
     speakerId,
-    displayName,
+    displayName: registration.displayName,
     isRegistered,
     config: speakerConfig,
     
@@ -127,21 +109,11 @@ export const useSpeakerService = (
 export const useMultiSpeakerService = (speakers: Array<{ id: string; config: SpeakerServiceConfig }>) => {
   const chatService = useChatService();
   
-  // Register all speakers - only if not already registered
-  React.useEffect(() => {
-    speakers.forEach(({ id, config }) => {
-      const existingSpeaker = chatService.getSpeaker(id);
-      if (!existingSpeaker) {
-        chatService.registerSpeaker(id, {
-          displayName: config.displayName || id,
-          color: config.color || '#007bff',
-          avatar: config.avatar,
-          defaultDuration: config.defaultDuration || 5000,
-          isActive: true,
-        });
-      }
-    });
-  }, [speakers]);
+  // Use shared registration logic for each speaker
+  const registrations = speakers.map(({ id, config }) => 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useSpeakerRegistration(id, config)
+  );
 
   // Create speaker services for each speaker
   const speakerServices = React.useMemo(() => {
