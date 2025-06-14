@@ -3,6 +3,7 @@
 import React from 'react';
 import { useChatService } from '@/services/chatService';
 import { useSpeakerService } from '@/services/speakerService';
+import { useSpeakerContext } from '@/components/SpeakerContainer/SpeakerContext';
 import { ChatOverlayProps, ChatMessage, MessageOptions } from './types';
 import styles from './ChatOverlay.module.css';
 
@@ -12,21 +13,35 @@ interface ExtendedChatOverlayProps extends ChatOverlayProps {
   filterBySpeaker?: string;
 }
 
+/**
+ * Context-aware ChatOverlay that automatically uses speaker context when available.
+ * Falls back to prop-based configuration for backward compatibility.
+ */
 const ChatOverlay: React.FC<ExtendedChatOverlayProps> = React.memo(({
   className = '',
   maxMessages = 5,
   showSpeakerNames = true,
   filterBySpeaker,
 }) => {
+  // Try to get speaker context, fall back to props if not available
+  let speakerContext = null;
+  try {
+    speakerContext = useSpeakerContext();
+  } catch {
+    // Not within a SpeakerProvider, use props instead
+  }
+
+  // Use context speaker ID if available, otherwise use filterBySpeaker prop
+  const effectiveFilterBySpeaker = speakerContext?.speakerId || filterBySpeaker;
   const chatService = useChatService();
   
   // Get messages - use filtered approach for better encapsulation
   const visibleMessages = React.useMemo(() => {
-    if (filterBySpeaker) {
-      return chatService.getVisibleMessages(maxMessages, filterBySpeaker);
+    if (effectiveFilterBySpeaker) {
+      return chatService.getVisibleMessages(maxMessages, effectiveFilterBySpeaker);
     }
     return chatService.getVisibleMessages(maxMessages);
-  }, [chatService, maxMessages, filterBySpeaker]);
+  }, [chatService, maxMessages, effectiveFilterBySpeaker]);
 
   const speakers = chatService.getSpeakers();
 

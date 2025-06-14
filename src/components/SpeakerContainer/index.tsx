@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { useSpeakerService } from '@/services/speakerService';
+import { SpeakerProvider, SpeakerProviderProps } from './SpeakerContext';
 import ChatOverlay from '@/components/ChatOverlay';
 import { MessageOptions } from '@/components/ChatOverlay/types';
+import { useSpeakerService } from '@/services/speakerService';
 
 export interface SpeakerContainerProps {
   speakerId: string;
@@ -24,9 +25,11 @@ export interface SpeakerContainerProps {
 }
 
 /**
- * Minimal, unopinionated SpeakerContainer component.
- * Only handles speaker registration and chat overlay - no layout or styling opinions.
- * Users have complete control over positioning, styling, and content.
+ * Context-based SpeakerContainer component.
+ * Creates a speaker context and optionally renders a ChatOverlay.
+ * All child components can access speaker context without prop drilling.
+ * 
+ * For maximum flexibility, consider using SpeakerProvider + ChatOverlay directly.
  */
 const SpeakerContainer: React.FC<SpeakerContainerProps> = ({
   speakerId,
@@ -41,30 +44,33 @@ const SpeakerContainer: React.FC<SpeakerContainerProps> = ({
   color,
   defaultDuration,
 }) => {
-  // Register the speaker with optional configuration
-  useSpeakerService(speakerId, {
-    displayName: displayName || speakerId,
-    color: color || '#007bff',
-    defaultDuration: defaultDuration || 5000,
-    chatContext,
-  });
-
   return (
-    <div className={className} style={style}>
+    <SpeakerProvider
+      speakerId={speakerId}
+      displayName={displayName}
+      color={color}
+      defaultDuration={defaultDuration}
+      chatContext={chatContext}
+      className={className}
+      style={style}
+    >
       {children}
       
       {showChatOverlay && (
         <ChatOverlay 
           maxMessages={maxMessages}
-          filterBySpeaker={speakerId}
           className={chatOverlayClassName}
         />
       )}
-    </div>
+    </SpeakerProvider>
   );
 };
 
 export default SpeakerContainer;
+
+// Re-export context components for direct usage
+export { SpeakerProvider, useSpeakerContext, useSpeakerControls } from './SpeakerContext';
+export type { SpeakerProviderProps, SpeakerContextValue } from './SpeakerContext';
 
 // Hook to get speaker container controls - now using service layer
 export const useSpeakerContainer = (speakerId: string, options: {
