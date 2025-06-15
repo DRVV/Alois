@@ -11,6 +11,21 @@
   max-width: 300px;
 }
 
+/* Relative positioning variant - appears at top-center of parent */
+.overlayRelative {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  pointer-events: none;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 300px;
+}
+
 .messageContainer {
   transform-origin: top right;
 }
