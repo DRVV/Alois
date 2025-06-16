@@ -14,10 +14,14 @@ import styles from './ChatOverlay.module.css';
 const ChatOverlay: React.FC<ChatOverlayProps> = React.memo(({
   className = '',
   maxMessages = 5,
+  parentWidth,
+  parentHeight,
 }) => {
   // Always use context - no fallback needed
   const speakerContext = useOptionalSpeakerContext();
   const chatService = useChatService();
+  const overlayRef = React.useRef<HTMLDivElement>(null);
+  const [dynamicStyles, setDynamicStyles] = React.useState<React.CSSProperties>({});
   
   // Get messages filtered by speaker context
   const visibleMessages = React.useMemo(() => {
@@ -28,6 +32,51 @@ const ChatOverlay: React.FC<ChatOverlayProps> = React.memo(({
   }, [chatService, maxMessages, speakerContext?.speakerId]);
 
   const speakers = chatService.getSpeakers();
+
+  // Calculate dynamic positioning and sizing
+  React.useEffect(() => {
+    if (!overlayRef.current || visibleMessages.length === 0) {
+      setDynamicStyles({});
+      return;
+    }
+
+    // Calculate responsive width based on parent size
+    let calculatedWidth = 300; // default
+    if (parentWidth) {
+      // Make overlay width 4-5x the parent width, with min/max bounds
+      calculatedWidth = Math.max(200, Math.min(400, parentWidth * 4.5));
+    }
+
+    // Set initial styles without measuring height first
+    const initialStyles = {
+      '--overlay-width': `${calculatedWidth}px`,
+      '--overlay-top': '-10px', // temporary position
+    } as React.CSSProperties;
+
+    setDynamicStyles(initialStyles);
+
+    // Use a timeout to measure height after render
+    const timeoutId = setTimeout(() => {
+      const overlay = overlayRef.current;
+      if (!overlay) return;
+
+      const overlayHeight = overlay.offsetHeight;
+      
+      // Calculate Y position to avoid parent intersection
+      const gap = 1; // desired gap between parent and overlay
+      const parentHeightValue = parentHeight || 60; // default to SquareIcon height
+      const topPosition = -(overlayHeight + gap);
+
+      setDynamicStyles(prev => ({
+        ...prev,
+        '--overlay-top': `${topPosition}px`,
+      } as React.CSSProperties));
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [visibleMessages.length, parentWidth, parentHeight]);
 
   if (visibleMessages.length === 0) {
     return null;
@@ -51,7 +100,11 @@ const ChatOverlay: React.FC<ChatOverlayProps> = React.memo(({
   };
 
   return (
-    <div className={`${styles.overlay} ${className}`}>
+    <div 
+      ref={overlayRef}
+      className={`${styles.overlay} ${className}`}
+      style={dynamicStyles}
+    >
       {visibleMessages.map((message) => (
         <div
           key={message.id}

@@ -1,6 +1,6 @@
 .overlay {
   position: absolute;
-  top: 0;
+  top: var(--overlay-top, 0);
   right: 0;
   z-index: 1000;
   pointer-events: none;
@@ -8,13 +8,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: 300px;
+  width: var(--overlay-width, 300px);
+  max-width: var(--overlay-width, 300px);
 }
 
 /* Relative positioning variant - appears at top-center of parent */
 .overlayRelative {
   position: absolute;
-  top: -10px;
+  top: var(--overlay-top, -10px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -23,7 +24,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: 300px;
+  width: var(--overlay-width, 300px);
+  max-width: var(--overlay-width, 300px);
 }
 
 .messageContainer {

@@ -72,6 +72,8 @@ const SquareIcon: React.FC<SquareIconProps> = ({
       <ChatOverlay 
         maxMessages={maxMessages}
         className={styles.overlayRelative}
+        parentWidth={60}
+        parentHeight={60}
       />
     </SpeakerContainer>
   );

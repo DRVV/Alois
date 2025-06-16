@@ -36,4 +36,6 @@ export interface ChatOverlayProps {
   className?: string;
   maxMessages?: number;
   messageDuration?: number;
+  parentWidth?: number;
+  parentHeight?: number;
 }
